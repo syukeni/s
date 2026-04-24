@@ -1,0 +1,1327 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Steiner Distortion Camera</title>
+
+  <style>
+    :root {
+      --bg1: #0d0b0c;
+      --bg2: #211818;
+      --panel: rgba(26, 22, 23, 0.78);
+      --panel2: rgba(38, 31, 33, 0.9);
+      --line: rgba(255,255,255,0.14);
+      --text: #f8efe8;
+      --muted: #cdbfb3;
+      --accent: #efb6a1;
+      --green: #d8e58b;
+      --blue: #9db6ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 5%, rgba(255,150,110,0.20), transparent 30%),
+        radial-gradient(circle at 85% 8%, rgba(190,230,120,0.13), transparent 32%),
+        radial-gradient(circle at 70% 32%, rgba(120,140,255,0.11), transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2) 56%, #101314);
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.32)),
+        linear-gradient(rgba(255,255,255,0.018), transparent);
+    }
+
+    .app {
+      width: min(1120px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    header {
+      padding: 20px 2px 12px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--green);
+      font-size: 12px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(31px, 8vw, 64px);
+      line-height: 1.02;
+      letter-spacing: -0.055em;
+    }
+
+    .lead {
+      margin: 14px 0 0;
+      color: var(--muted);
+      line-height: 1.85;
+      max-width: 800px;
+      font-size: 15px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 15px;
+    }
+
+    .chip {
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.055);
+      backdrop-filter: blur(10px);
+      font-size: 13px;
+    }
+
+    .chip strong {
+      color: var(--text);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 14px;
+      margin-top: 16px;
+      align-items: start;
+    }
+
+    .viewer,
+    .panel,
+    .note {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 22px 70px rgba(0,0,0,0.34);
+    }
+
+    .viewer {
+      overflow: hidden;
+    }
+
+    .viewer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    }
+
+    .viewer-top strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .viewer-top span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .badge {
+      color: var(--blue);
+      border: 1px solid rgba(157,182,255,0.28);
+      background: rgba(157,182,255,0.09);
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 56vh;
+      background: #000;
+      overflow: hidden;
+    }
+
+    video {
+      display: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      min-height: 56vh;
+      background: #000;
+    }
+
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 26px;
+      line-height: 1.8;
+      color: var(--muted);
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.12), transparent 38%),
+        rgba(0,0,0,0.76);
+    }
+
+    .placeholder.hidden {
+      display: none;
+    }
+
+    .panel {
+      padding: 15px;
+    }
+
+    .panel h2 {
+      margin: 0 0 4px;
+      font-size: 20px;
+    }
+
+    .sub {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 13px;
+    }
+
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 18px;
+      padding: 13px 12px;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03)),
+        var(--panel2);
+      cursor: pointer;
+      box-shadow: inset 0 1px rgba(255,255,255,0.06), 0 10px 24px rgba(0,0,0,0.18);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .primary {
+      background:
+        linear-gradient(135deg, rgba(239,182,161,0.23), rgba(216,229,139,0.10)),
+        var(--panel2);
+    }
+
+    .group {
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .group h3 {
+      margin: 0 0 11px;
+      color: var(--accent);
+      font-size: 15px;
+    }
+
+    .control {
+      display: grid;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .control:first-of-type {
+      margin-top: 0;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .row strong {
+      color: var(--text);
+      min-width: 54px;
+      text-align: right;
+      font-size: 13px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.18);
+      color: var(--text);
+      background: rgba(28, 22, 24, 0.96);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #efb6a1;
+    }
+
+    .tips {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      line-height: 1.7;
+      background: rgba(0,0,0,0.15);
+      font-size: 13px;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 13px;
+      margin-top: 14px;
+    }
+
+    .note {
+      padding: 15px;
+    }
+
+    .note h3 {
+      margin: 0 0 7px;
+      color: var(--accent);
+      font-size: 16px;
+    }
+
+    .note p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    footer {
+      padding: 16px 2px 26px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 920px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .notes {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stage,
+      canvas {
+        min-height: 50vh;
+      }
+
+      .buttons {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header>
+      <p class="eyebrow">Rudolf Steiner Distortion Camera</p>
+      <h1>シュタイナー色彩カメラ</h1>
+      <p class="lead">
+        シュタイナー風の色彩変換に、風景を美しく歪める
+        「ゆらぎ」「プリズム」「球面／宙玉風」を追加した版です。
+        風景、空、木、建築、神社、夜景を幻想的に変形できます。
+      </p>
+
+      <div class="chips">
+        <div class="chip">状態：<strong id="statusText">待機中</strong></div>
+        <div class="chip">色彩：<strong id="modeLabel">光と闇の境界</strong></div>
+        <div class="chip">歪み：<strong id="distortionLabel">ゆらぎ＋プリズム＋球面</strong></div>
+      </div>
+    </header>
+
+    <section class="layout">
+      <div class="viewer">
+        <div class="viewer-top">
+          <div>
+            <strong>Live View</strong>
+            <span>色彩変換＋風景歪み</span>
+          </div>
+          <div class="badge">Distortion Edition</div>
+        </div>
+
+        <div class="stage">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="canvas"></canvas>
+
+          <div id="placeholder" class="placeholder">
+            <div>
+              <p style="margin:0 0 8px;">「カメラを開始」を押すと映像が出ます。</p>
+              <p style="margin:0;">iPhoneでは GitHub Pages のURLを Safari で開いてください。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>調整</h2>
+        <p class="sub">色彩、発光、ぼかし、歪みを調整します。</p>
+
+        <div class="buttons">
+          <button id="startButton" class="primary">カメラを開始</button>
+          <button id="stopButton">停止</button>
+          <button id="switchButton">前後切替</button>
+          <button id="snapshotButton">画像保存</button>
+        </div>
+
+        <div class="group">
+          <h3>プリセット</h3>
+
+          <label class="control">
+            <div class="row">
+              <span>完成プリセット</span>
+              <strong>Quick</strong>
+            </div>
+            <select id="presetSelect">
+              <option value="landscapeMystic">神秘風景</option>
+              <option value="prismLandscape">プリズム風景</option>
+              <option value="soratama">宙玉風景</option>
+              <option value="forestBreath">森の呼吸</option>
+              <option value="cinemaQuiet">静かな映画調</option>
+              <option value="clear">歪み少なめ</option>
+            </select>
+          </label>
+
+          <label class="control">
+            <div class="row">
+              <span>色彩モード</span>
+              <strong id="modeMini">光と闇の境界</strong>
+            </div>
+            <select id="modeSelect">
+              <option value="boundary">光と闇の境界</option>
+              <option value="imageColors">像／影の色</option>
+              <option value="shiningColors">輝きの色</option>
+              <option value="soulRose">桃色の魂</option>
+              <option value="greenLife">緑の生命</option>
+              <option value="normal">通常カメラ</option>
+            </select>
+          </label>
+
+          <label class="control">
+            <div class="row">
+              <span>歪みモード</span>
+              <strong id="distortionMini">全部入り</strong>
+            </div>
+            <select id="distortionSelect">
+              <option value="all">全部入り</option>
+              <option value="ripple">ゆらぎ</option>
+              <option value="prism">プリズム</option>
+              <option value="sphere">球面／宙玉風</option>
+              <option value="none">歪みなし</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="group">
+          <h3>映像の質感</h3>
+
+          <label class="control">
+            <div class="row"><span>色彩効果</span><strong id="intensityOut">82%</strong></div>
+            <input id="intensitySlider" type="range" min="0" max="100" value="82">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>発光</span><strong id="bloomOut">38%</strong></div>
+            <input id="bloomSlider" type="range" min="0" max="100" value="38">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>やわらかさ</span><strong id="softOut">56%</strong></div>
+            <input id="softSlider" type="range" min="0" max="100" value="56">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>周辺減光</span><strong id="vignetteOut">28%</strong></div>
+            <input id="vignetteSlider" type="range" min="0" max="100" value="28">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>粒子感</span><strong id="grainOut">6%</strong></div>
+            <input id="grainSlider" type="range" min="0" max="100" value="6">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>歪みの強さ</span><strong id="distortOut">32%</strong></div>
+            <input id="distortSlider" type="range" min="0" max="100" value="32">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>プリズム色ズレ</span><strong id="prismOut">24%</strong></div>
+            <input id="prismSlider" type="range" min="0" max="100" value="24">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>コントラスト</span><strong id="contrastOut">106%</strong></div>
+            <input id="contrastSlider" type="range" min="70" max="140" value="106">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>彩度</span><strong id="saturationOut">104%</strong></div>
+            <input id="saturationSlider" type="range" min="70" max="140" value="104">
+          </label>
+        </div>
+
+        <div class="tips">
+          重い場合は、まず <strong>歪みの強さ</strong>、<strong>発光</strong>、<strong>やわらかさ</strong> を下げてください。
+          風景には「神秘風景」、光には「プリズム風景」、建物や参道には「宙玉風景」がおすすめです。
+        </div>
+      </aside>
+    </section>
+
+    <section class="notes">
+      <article class="note">
+        <h3>ゆらぎ</h3>
+        <p>水面や熱気のように風景を揺らします。木、空、夕景に合います。</p>
+      </article>
+
+      <article class="note">
+        <h3>プリズム</h3>
+        <p>画面の端に屈折と色ズレを出します。光、雲、水面、夜景に合います。</p>
+      </article>
+
+      <article class="note">
+        <h3>球面／宙玉風</h3>
+        <p>中心を球のように曲げます。参道、建築、路地、神社風景に合います。</p>
+      </article>
+    </section>
+
+    <footer>
+      置き換え後、Commit changes を押して、数分後に GitHub Pages のURLを再読み込みしてください。
+    </footer>
+  </main>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const placeholder = document.getElementById("placeholder");
+
+    const startButton = document.getElementById("startButton");
+    const stopButton = document.getElementById("stopButton");
+    const switchButton = document.getElementById("switchButton");
+    const snapshotButton = document.getElementById("snapshotButton");
+
+    const presetSelect = document.getElementById("presetSelect");
+    const modeSelect = document.getElementById("modeSelect");
+    const distortionSelect = document.getElementById("distortionSelect");
+
+    const statusText = document.getElementById("statusText");
+    const modeLabel = document.getElementById("modeLabel");
+    const modeMini = document.getElementById("modeMini");
+    const distortionLabel = document.getElementById("distortionLabel");
+    const distortionMini = document.getElementById("distortionMini");
+
+    const sliders = {
+      intensity: document.getElementById("intensitySlider"),
+      bloom: document.getElementById("bloomSlider"),
+      soft: document.getElementById("softSlider"),
+      vignette: document.getElementById("vignetteSlider"),
+      grain: document.getElementById("grainSlider"),
+      distort: document.getElementById("distortSlider"),
+      prism: document.getElementById("prismSlider"),
+      contrast: document.getElementById("contrastSlider"),
+      saturation: document.getElementById("saturationSlider")
+    };
+
+    const outs = {
+      intensity: document.getElementById("intensityOut"),
+      bloom: document.getElementById("bloomOut"),
+      soft: document.getElementById("softOut"),
+      vignette: document.getElementById("vignetteOut"),
+      grain: document.getElementById("grainOut"),
+      distort: document.getElementById("distortOut"),
+      prism: document.getElementById("prismOut"),
+      contrast: document.getElementById("contrastOut"),
+      saturation: document.getElementById("saturationOut")
+    };
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    const srcCanvas = document.createElement("canvas");
+    const srcCtx = srcCanvas.getContext("2d", { willReadFrequently: true });
+
+    const colorCanvas = document.createElement("canvas");
+    const colorCtx = colorCanvas.getContext("2d", { willReadFrequently: true });
+
+    const distortCanvas = document.createElement("canvas");
+    const distortCtx = distortCanvas.getContext("2d", { willReadFrequently: true });
+
+    const bloomCanvas = document.createElement("canvas");
+    const bloomCtx = bloomCanvas.getContext("2d");
+
+    const noiseCanvas = document.createElement("canvas");
+    const noiseCtx = noiseCanvas.getContext("2d");
+
+    let stream = null;
+    let animationId = null;
+    let facingMode = "environment";
+    let frame = 0;
+
+    const state = {
+      mode: "boundary",
+      distortion: "all",
+      intensity: 0.82,
+      bloom: 0.38,
+      soft: 0.56,
+      vignette: 0.28,
+      grain: 0.06,
+      distort: 0.32,
+      prism: 0.24,
+      contrast: 1.06,
+      saturation: 1.04
+    };
+
+    const modeNames = {
+      boundary: "光と闇の境界",
+      imageColors: "像／影の色",
+      shiningColors: "輝きの色",
+      soulRose: "桃色の魂",
+      greenLife: "緑の生命",
+      normal: "通常カメラ"
+    };
+
+    const distortionNames = {
+      all: "ゆらぎ＋プリズム＋球面",
+      ripple: "ゆらぎ",
+      prism: "プリズム",
+      sphere: "球面／宙玉風",
+      none: "歪みなし"
+    };
+
+    const presets = {
+      landscapeMystic: {
+        mode: "boundary",
+        distortion: "all",
+        intensity: 0.84,
+        bloom: 0.42,
+        soft: 0.58,
+        vignette: 0.32,
+        grain: 0.06,
+        distort: 0.32,
+        prism: 0.22,
+        contrast: 1.07,
+        saturation: 1.02
+      },
+      prismLandscape: {
+        mode: "shiningColors",
+        distortion: "prism",
+        intensity: 0.78,
+        bloom: 0.55,
+        soft: 0.35,
+        vignette: 0.18,
+        grain: 0.04,
+        distort: 0.24,
+        prism: 0.58,
+        contrast: 1.06,
+        saturation: 1.12
+      },
+      soratama: {
+        mode: "greenLife",
+        distortion: "sphere",
+        intensity: 0.74,
+        bloom: 0.26,
+        soft: 0.48,
+        vignette: 0.38,
+        grain: 0.04,
+        distort: 0.58,
+        prism: 0.10,
+        contrast: 1.04,
+        saturation: 1.08
+      },
+      forestBreath: {
+        mode: "greenLife",
+        distortion: "ripple",
+        intensity: 0.78,
+        bloom: 0.24,
+        soft: 0.62,
+        vignette: 0.22,
+        grain: 0.05,
+        distort: 0.36,
+        prism: 0.06,
+        contrast: 1.02,
+        saturation: 1.10
+      },
+      cinemaQuiet: {
+        mode: "boundary",
+        distortion: "ripple",
+        intensity: 0.62,
+        bloom: 0.18,
+        soft: 0.28,
+        vignette: 0.44,
+        grain: 0.13,
+        distort: 0.14,
+        prism: 0.04,
+        contrast: 1.12,
+        saturation: 0.94
+      },
+      clear: {
+        mode: "normal",
+        distortion: "none",
+        intensity: 0.0,
+        bloom: 0.12,
+        soft: 0.16,
+        vignette: 0.14,
+        grain: 0.02,
+        distort: 0.0,
+        prism: 0.0,
+        contrast: 1.02,
+        saturation: 1.02
+      }
+    };
+
+    startButton.addEventListener("click", startCamera);
+    stopButton.addEventListener("click", stopCamera);
+    switchButton.addEventListener("click", switchCamera);
+    snapshotButton.addEventListener("click", saveSnapshot);
+
+    presetSelect.addEventListener("change", () => applyPreset(presetSelect.value));
+
+    modeSelect.addEventListener("change", () => {
+      state.mode = modeSelect.value;
+      updateLabels();
+    });
+
+    distortionSelect.addEventListener("change", () => {
+      state.distortion = distortionSelect.value;
+      updateLabels();
+    });
+
+    Object.entries(sliders).forEach(([key, slider]) => {
+      slider.addEventListener("input", () => {
+        syncSlidersToState();
+        updateOutputs();
+      });
+    });
+
+    function applyPreset(name) {
+      Object.assign(state, presets[name]);
+      syncStateToSliders();
+      updateLabels();
+    }
+
+    function syncSlidersToState() {
+      state.intensity = Number(sliders.intensity.value) / 100;
+      state.bloom = Number(sliders.bloom.value) / 100;
+      state.soft = Number(sliders.soft.value) / 100;
+      state.vignette = Number(sliders.vignette.value) / 100;
+      state.grain = Number(sliders.grain.value) / 100;
+      state.distort = Number(sliders.distort.value) / 100;
+      state.prism = Number(sliders.prism.value) / 100;
+      state.contrast = Number(sliders.contrast.value) / 100;
+      state.saturation = Number(sliders.saturation.value) / 100;
+    }
+
+    function syncStateToSliders() {
+      sliders.intensity.value = Math.round(state.intensity * 100);
+      sliders.bloom.value = Math.round(state.bloom * 100);
+      sliders.soft.value = Math.round(state.soft * 100);
+      sliders.vignette.value = Math.round(state.vignette * 100);
+      sliders.grain.value = Math.round(state.grain * 100);
+      sliders.distort.value = Math.round(state.distort * 100);
+      sliders.prism.value = Math.round(state.prism * 100);
+      sliders.contrast.value = Math.round(state.contrast * 100);
+      sliders.saturation.value = Math.round(state.saturation * 100);
+
+      modeSelect.value = state.mode;
+      distortionSelect.value = state.distortion;
+
+      updateOutputs();
+    }
+
+    function updateOutputs() {
+      outs.intensity.textContent = Math.round(state.intensity * 100) + "%";
+      outs.bloom.textContent = Math.round(state.bloom * 100) + "%";
+      outs.soft.textContent = Math.round(state.soft * 100) + "%";
+      outs.vignette.textContent = Math.round(state.vignette * 100) + "%";
+      outs.grain.textContent = Math.round(state.grain * 100) + "%";
+      outs.distort.textContent = Math.round(state.distort * 100) + "%";
+      outs.prism.textContent = Math.round(state.prism * 100) + "%";
+      outs.contrast.textContent = Math.round(state.contrast * 100) + "%";
+      outs.saturation.textContent = Math.round(state.saturation * 100) + "%";
+    }
+
+    function updateLabels() {
+      const modeName = modeNames[state.mode] || "通常カメラ";
+      const distortionName = distortionNames[state.distortion] || "歪みなし";
+
+      modeLabel.textContent = modeName;
+      modeMini.textContent = modeName;
+
+      distortionLabel.textContent = distortionName;
+      distortionMini.textContent = state.distortion === "all" ? "全部入り" : distortionName;
+    }
+
+    async function startCamera() {
+      stopCamera();
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("このブラウザではカメラが使えません。Safariで開いてください。");
+        return;
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        placeholder.classList.add("hidden");
+        statusText.textContent = "カメラ動作中";
+        resizeCanvases();
+        makeNoise();
+        renderLoop();
+      } catch (error) {
+        console.error(error);
+        statusText.textContent = "起動失敗";
+        alert("カメラを起動できませんでした。Safariで開き、カメラ許可を確認してください。");
+      }
+    }
+
+    function stopCamera() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+
+      placeholder.classList.remove("hidden");
+      statusText.textContent = "待機中";
+    }
+
+    async function switchCamera() {
+      facingMode = facingMode === "environment" ? "user" : "environment";
+      await startCamera();
+    }
+
+    function resizeCanvases() {
+      const vw = video.videoWidth || 1280;
+      const vh = video.videoHeight || 960;
+
+      const maxWidth = 760;
+      const scale = Math.min(1, maxWidth / vw);
+
+      const w = Math.round(vw * scale);
+      const h = Math.round(vh * scale);
+
+      canvas.width = w;
+      canvas.height = h;
+
+      srcCanvas.width = w;
+      srcCanvas.height = h;
+
+      colorCanvas.width = w;
+      colorCanvas.height = h;
+
+      distortCanvas.width = w;
+      distortCanvas.height = h;
+
+      bloomCanvas.width = Math.max(1, Math.round(w / 4));
+      bloomCanvas.height = Math.max(1, Math.round(h / 4));
+    }
+
+    function renderLoop() {
+      if (!stream) return;
+
+      frame += 1;
+
+      const w = canvas.width;
+      const h = canvas.height;
+
+      srcCtx.drawImage(video, 0, 0, w, h);
+
+      const colorFrame = srcCtx.getImageData(0, 0, w, h);
+      applyColorFilter(colorFrame.data);
+      colorCtx.putImageData(colorFrame, 0, 0);
+
+      if (state.distortion === "none" || state.distort <= 0.01) {
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(colorCanvas, 0, 0);
+      } else {
+        applyDistortion(w, h);
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(distortCanvas, 0, 0);
+      }
+
+      applySoft();
+      applyBloom();
+      applyVignette();
+      applyGrain();
+
+      animationId = requestAnimationFrame(renderLoop);
+    }
+
+    function applyColorFilter(data) {
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        let mapped;
+
+        if (state.mode === "boundary") {
+          mapped = boundaryColors(r, g, b);
+        } else if (state.mode === "imageColors") {
+          mapped = imageColors(r, g, b);
+        } else if (state.mode === "shiningColors") {
+          mapped = shiningColors(r, g, b);
+        } else if (state.mode === "soulRose") {
+          mapped = soulRose(r, g, b);
+        } else if (state.mode === "greenLife") {
+          mapped = greenLife(r, g, b);
+        } else {
+          mapped = [r, g, b];
+        }
+
+        let rr = mix(r, mapped[0], state.intensity);
+        let gg = mix(g, mapped[1], state.intensity);
+        let bb = mix(b, mapped[2], state.intensity);
+
+        [rr, gg, bb] = adjustSaturation(rr, gg, bb, state.saturation);
+        [rr, gg, bb] = adjustContrast(rr, gg, bb, state.contrast);
+
+        data[i] = clamp(rr);
+        data[i + 1] = clamp(gg);
+        data[i + 2] = clamp(bb);
+      }
+    }
+
+    function applyDistortion(w, h) {
+      const src = colorCtx.getImageData(0, 0, w, h);
+      const dst = distortCtx.createImageData(w, h);
+
+      const srcData = src.data;
+      const dstData = dst.data;
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = Math.sqrt(cx * cx + cy * cy);
+      const t = frame * 0.035;
+      const amount = state.distort;
+      const prismAmount = state.prism;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          let sx = x;
+          let sy = y;
+
+          if (state.distortion === "ripple" || state.distortion === "all") {
+            const wave1 = Math.sin(y * 0.035 + t) * 18 * amount;
+            const wave2 = Math.sin((x + y) * 0.018 + t * 1.4) * 10 * amount;
+            const wave3 = Math.cos(x * 0.028 + t * 0.8) * 12 * amount;
+
+            sx += wave1 + wave2;
+            sy += wave3;
+          }
+
+          if (state.distortion === "sphere" || state.distortion === "all") {
+            const dx = x - cx;
+            const dy = y - cy;
+            const r = Math.sqrt(dx * dx + dy * dy);
+            const nr = r / maxR;
+
+            if (nr < 1.0) {
+              const angle = Math.atan2(dy, dx);
+              const power = 1 + amount * 1.35;
+              const sphereR = Math.pow(nr, power) * maxR;
+              const pull = 0.72 + amount * 0.28;
+
+              sx = mix(sx, cx + Math.cos(angle) * sphereR, pull);
+              sy = mix(sy, cy + Math.sin(angle) * sphereR, pull);
+            }
+          }
+
+          if (state.distortion === "prism" || state.distortion === "all") {
+            const dx = x - cx;
+            const dy = y - cy;
+            const r = Math.sqrt(dx * dx + dy * dy);
+            const edge = Math.min(1, r / maxR);
+            const bend = edge * edge * 16 * amount;
+
+            sx += (dx / maxR) * bend;
+            sy += (dy / maxR) * bend;
+          }
+
+          const index = (y * w + x) * 4;
+
+          if (state.distortion === "prism" || state.distortion === "all") {
+            const dx = x - cx;
+            const dy = y - cy;
+            const edge = Math.min(1, Math.sqrt(dx * dx + dy * dy) / maxR);
+            const shift = edge * edge * prismAmount * 14;
+
+            const ux = dx / (Math.sqrt(dx * dx + dy * dy) || 1);
+            const uy = dy / (Math.sqrt(dx * dx + dy * dy) || 1);
+
+            const red = sample(srcData, w, h, sx + ux * shift, sy + uy * shift);
+            const green = sample(srcData, w, h, sx, sy);
+            const blue = sample(srcData, w, h, sx - ux * shift, sy - uy * shift);
+
+            dstData[index] = red[0];
+            dstData[index + 1] = green[1];
+            dstData[index + 2] = blue[2];
+            dstData[index + 3] = 255;
+          } else {
+            const c = sample(srcData, w, h, sx, sy);
+
+            dstData[index] = c[0];
+            dstData[index + 1] = c[1];
+            dstData[index + 2] = c[2];
+            dstData[index + 3] = 255;
+          }
+        }
+      }
+
+      distortCtx.putImageData(dst, 0, 0);
+    }
+
+    function sample(data, w, h, x, y) {
+      const ix = Math.max(0, Math.min(w - 1, Math.round(x)));
+      const iy = Math.max(0, Math.min(h - 1, Math.round(y)));
+      const i = (iy * w + ix) * 4;
+
+      return [
+        data[i],
+        data[i + 1],
+        data[i + 2],
+        data[i + 3]
+      ];
+    }
+
+    function applySoft() {
+      if (state.soft <= 0.01) return;
+
+      const blur = 0.5 + state.soft * 2.8;
+      const alpha = 0.07 + state.soft * 0.16;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.filter = "blur(" + blur.toFixed(2) + "px)";
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+    }
+
+    function applyBloom() {
+      if (state.bloom <= 0.01) return;
+
+      bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
+      bloomCtx.drawImage(canvas, 0, 0, bloomCanvas.width, bloomCanvas.height);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.08 + state.bloom * 0.34;
+      ctx.filter = "blur(" + (2 + state.bloom * 12).toFixed(2) + "px)";
+      ctx.drawImage(bloomCanvas, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    function applyVignette() {
+      if (state.vignette <= 0.01) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = Math.max(w, h) * 0.75;
+      const strength = 0.12 + state.vignette * 0.42;
+
+      const grad = ctx.createRadialGradient(cx, cy, r * 0.18, cx, cy, r);
+      grad.addColorStop(0, "rgba(0,0,0,0)");
+      grad.addColorStop(0.58, "rgba(0,0,0," + (strength * 0.25).toFixed(3) + ")");
+      grad.addColorStop(1, "rgba(0,0,0," + strength.toFixed(3) + ")");
+
+      ctx.save();
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
+    function makeNoise() {
+      noiseCanvas.width = 220;
+      noiseCanvas.height = 220;
+
+      const image = noiseCtx.createImageData(noiseCanvas.width, noiseCanvas.height);
+      const data = image.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const n = Math.floor(Math.random() * 255);
+        data[i] = n;
+        data[i + 1] = n;
+        data[i + 2] = n;
+        data[i + 3] = 255;
+      }
+
+      noiseCtx.putImageData(image, 0, 0);
+    }
+
+    function applyGrain() {
+      if (state.grain <= 0.01) return;
+
+      ctx.save();
+      ctx.globalAlpha = 0.02 + state.grain * 0.14;
+      ctx.globalCompositeOperation = "soft-light";
+      ctx.drawImage(noiseCanvas, -frame % 20, -frame % 16, canvas.width + 20, canvas.height + 20);
+      ctx.restore();
+    }
+
+    function imageColors(r, g, b) {
+      const brightness = getBrightness(r, g, b);
+      const saturation = getSaturation(r, g, b);
+
+      const black = [10, 9, 8];
+      const green = [66, 126, 78];
+      const rose = [240, 152, 149];
+      const white = [250, 241, 225];
+
+      let color;
+
+      if (brightness < 0.25) {
+        color = blend(black, green, brightness / 0.25);
+      } else if (brightness < 0.58) {
+        color = blend(green, rose, (brightness - 0.25) / 0.33);
+      } else {
+        color = blend(rose, white, (brightness - 0.58) / 0.42);
+      }
+
+      const push = saturation * 0.18;
+
+      return [
+        color[0] + r * push,
+        color[1] + g * push,
+        color[2] + b * push
+      ];
+    }
+
+    function shiningColors(r, g, b) {
+      const brightness = getBrightness(r, g, b);
+      const contrast = getContrast(r, g, b);
+
+      const blue = [38, 70, 184];
+      const red = [219, 68, 56];
+      const yellow = [251, 220, 94];
+
+      let color;
+
+      if (brightness < 0.42) {
+        color = blend(blue, red, brightness / 0.42);
+      } else {
+        color = blend(red, yellow, (brightness - 0.42) / 0.58);
+      }
+
+      return [
+        color[0] + contrast * 18,
+        color[1] + contrast * 12,
+        color[2] + contrast * 8
+      ];
+    }
+
+    function soulRose(r, g, b) {
+      const brightness = getBrightness(r, g, b);
+
+      const deepRose = [144, 58, 68];
+      const rose = [244, 152, 152];
+      const warmWhite = [255, 236, 216];
+
+      let color;
+
+      if (brightness < 0.5) {
+        color = blend(deepRose, rose, brightness / 0.5);
+      } else {
+        color = blend(rose, warmWhite, (brightness - 0.5) / 0.5);
+      }
+
+      return [
+        color[0] + r * 0.1,
+        color[1] + g * 0.05,
+        color[2] + b * 0.03
+      ];
+    }
+
+    function boundaryColors(r, g, b) {
+      const brightness = getBrightness(r, g, b);
+      const edge = Math.abs(brightness - 0.5) * 2;
+
+      const darkBlue = [12, 22, 70];
+      const green = [58, 130, 84];
+      const red = [210, 72, 62];
+      const lightYellow = [255, 236, 145];
+
+      let color;
+
+      if (brightness < 0.34) {
+        color = blend(darkBlue, green, brightness / 0.34);
+      } else if (brightness < 0.66) {
+        color = blend(green, red, (brightness - 0.34) / 0.32);
+      } else {
+        color = blend(red, lightYellow, (brightness - 0.66) / 0.34);
+      }
+
+      const glow = 1 - edge;
+
+      return [
+        color[0] + glow * 30,
+        color[1] + glow * 18,
+        color[2] + glow * 10
+      ];
+    }
+
+    function greenLife(r, g, b) {
+      const brightness = getBrightness(r, g, b);
+      const saturation = getSaturation(r, g, b);
+
+      const dark = [18, 34, 24];
+      const moss = [72, 133, 74];
+      const warm = [206, 182, 106];
+      const light = [241, 234, 211];
+
+      let color;
+
+      if (brightness < 0.35) {
+        color = blend(dark, moss, brightness / 0.35);
+      } else if (brightness < 0.7) {
+        color = blend(moss, warm, (brightness - 0.35) / 0.35);
+      } else {
+        color = blend(warm, light, (brightness - 0.7) / 0.3);
+      }
+
+      return [
+        color[0] + r * saturation * 0.09,
+        color[1] + g * saturation * 0.14,
+        color[2] + b * saturation * 0.04
+      ];
+    }
+
+    function adjustSaturation(r, g, b, amount) {
+      const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+      return [
+        gray + (r - gray) * amount,
+        gray + (g - gray) * amount,
+        gray + (b - gray) * amount
+      ];
+    }
+
+    function adjustContrast(r, g, b, amount) {
+      return [
+        (r - 128) * amount + 128,
+        (g - 128) * amount + 128,
+        (b - 128) * amount + 128
+      ];
+    }
+
+    function getBrightness(r, g, b) {
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    }
+
+    function getSaturation(r, g, b) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      if (max === 0) return 0;
+      return (max - min) / max;
+    }
+
+    function getContrast(r, g, b) {
+      return (Math.max(r, g, b) - Math.min(r, g, b)) / 255;
+    }
+
+    function blend(a, b, t) {
+      const x = Math.max(0, Math.min(1, t));
+
+      return [
+        a[0] + (b[0] - a[0]) * x,
+        a[1] + (b[1] - a[1]) * x,
+        a[2] + (b[2] - a[2]) * x
+      ];
+    }
+
+    function mix(a, b, t) {
+      return a * (1 - t) + b * t;
+    }
+
+    function clamp(v) {
+      return Math.max(0, Math.min(255, Math.round(v)));
+    }
+
+    function saveSnapshot() {
+      if (!canvas.width || !canvas.height) {
+        alert("先にカメラを開始してください。");
+        return;
+      }
+
+      const link = document.createElement("a");
+      const now = new Date();
+
+      const filename =
+        "steiner-distortion-camera-" +
+        now.getFullYear() + "-" +
+        String(now.getMonth() + 1).padStart(2, "0") + "-" +
+        String(now.getDate()).padStart(2, "0") + "-" +
+        String(now.getHours()).padStart(2, "0") +
+        String(now.getMinutes()).padStart(2, "0") +
+        String(now.getSeconds()).padStart(2, "0") +
+        ".png";
+
+      link.download = filename;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    applyPreset("landscapeMystic");
+    updateLabels();
+  </script>
+</body>
+</html>
