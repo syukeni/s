@@ -1,0 +1,1318 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>昔話カメラ</title>
+
+  <style>
+    :root {
+      --bg1: #0f0b09;
+      --bg2: #291d14;
+      --panel: rgba(31, 25, 22, 0.78);
+      --panel2: rgba(43, 34, 28, 0.92);
+      --line: rgba(255,255,255,0.14);
+      --line2: rgba(255,255,255,0.22);
+      --text: #fff7ec;
+      --muted: #d7c8b7;
+      --accent: #efb980;
+      --accent2: #dbe98e;
+      --badge: #f4d59a;
+      --shadow: rgba(0,0,0,0.36);
+    }
+
+    body[data-story="kasa"] {
+      --bg1: #0a0e17;
+      --bg2: #172334;
+      --panel: rgba(20, 28, 39, 0.78);
+      --panel2: rgba(27, 36, 51, 0.92);
+      --text: #f3f8ff;
+      --muted: #c6d3e0;
+      --accent: #c8ddff;
+      --accent2: #fff0bd;
+      --badge: #d8e7ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Hiragino Sans",
+        "Yu Gothic",
+        sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 4%, rgba(255, 176, 105, 0.20), transparent 31%),
+        radial-gradient(circle at 88% 7%, rgba(215, 235, 140, 0.14), transparent 33%),
+        radial-gradient(circle at 75% 36%, rgba(120, 145, 255, 0.10), transparent 30%),
+        linear-gradient(135deg, var(--bg1), var(--bg2) 58%, #0b1013);
+      background-attachment: fixed;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at center, transparent 48%, rgba(0,0,0,0.32)),
+        linear-gradient(rgba(255,255,255,0.025), transparent);
+      mix-blend-mode: screen;
+    }
+
+    .app {
+      width: min(1140px, 100%);
+      margin: 0 auto;
+      padding: 14px;
+    }
+
+    header {
+      padding: 20px 2px 14px;
+    }
+
+    .eyebrow {
+      margin: 0 0 10px;
+      color: var(--accent2);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(34px, 9vw, 70px);
+      line-height: 1;
+      letter-spacing: -0.06em;
+      font-weight: 850;
+      text-shadow: 0 18px 44px rgba(0,0,0,0.35);
+    }
+
+    .lead {
+      margin: 14px 0 0;
+      max-width: 850px;
+      color: var(--muted);
+      line-height: 1.9;
+      font-size: 15px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    .chip {
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255,255,255,0.06);
+      backdrop-filter: blur(12px);
+      font-size: 13px;
+      box-shadow: inset 0 1px rgba(255,255,255,0.06);
+    }
+
+    .chip strong {
+      color: var(--text);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1.12fr 0.88fr;
+      gap: 14px;
+      margin-top: 16px;
+      align-items: start;
+    }
+
+    .viewer,
+    .panel,
+    .note {
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 24px 80px var(--shadow);
+    }
+
+    .viewer {
+      overflow: hidden;
+    }
+
+    .viewer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 17px;
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.012));
+    }
+
+    .viewer-top strong {
+      display: block;
+      font-size: 15px;
+    }
+
+    .viewer-top span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .badge {
+      color: var(--badge);
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.075);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 57vh;
+      background: #000;
+      overflow: hidden;
+    }
+
+    video {
+      display: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      min-height: 57vh;
+      background: #000;
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at center, transparent 52%, rgba(0,0,0,0.10)),
+        linear-gradient(180deg, rgba(255,255,255,0.03), transparent 22%, rgba(0,0,0,0.10));
+    }
+
+    .placeholder {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 28px;
+      line-height: 1.85;
+      color: var(--muted);
+      background:
+        radial-gradient(circle at center, rgba(255,255,255,0.13), transparent 38%),
+        rgba(0,0,0,0.76);
+    }
+
+    .placeholder.hidden {
+      display: none;
+    }
+
+    .panel {
+      padding: 16px;
+    }
+
+    .panel h2 {
+      margin: 0 0 5px;
+      font-size: 21px;
+    }
+
+    .sub {
+      margin: 0 0 15px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 13px;
+    }
+
+    button,
+    select,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 1px solid var(--line2);
+      border-radius: 19px;
+      padding: 13px 12px;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.14), rgba(255,255,255,0.035)),
+        var(--panel2);
+      cursor: pointer;
+      box-shadow:
+        inset 0 1px rgba(255,255,255,0.08),
+        0 12px 28px rgba(0,0,0,0.19);
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .primary {
+      background:
+        linear-gradient(135deg, rgba(255, 189, 120, 0.24), rgba(216, 232, 139, 0.13)),
+        var(--panel2);
+    }
+
+    .group {
+      margin-top: 12px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 23px;
+      background: rgba(255,255,255,0.045);
+    }
+
+    .group h3 {
+      margin: 0 0 11px;
+      color: var(--accent);
+      font-size: 15px;
+    }
+
+    .control {
+      display: grid;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .control:first-of-type {
+      margin-top: 0;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .row strong {
+      color: var(--text);
+      min-width: 62px;
+      text-align: right;
+      font-size: 13px;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 17px;
+      border: 1px solid var(--line2);
+      color: var(--text);
+      background: rgba(24, 19, 21, 0.96);
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .story-card {
+      margin-top: 10px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      background: rgba(255,255,255,0.045);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .story-card strong {
+      display: block;
+      color: var(--text);
+      margin-bottom: 4px;
+      font-size: 14px;
+    }
+
+    .tips {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      line-height: 1.75;
+      background: rgba(0,0,0,0.16);
+      font-size: 13px;
+    }
+
+    .notes {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 13px;
+      margin-top: 14px;
+    }
+
+    .note {
+      padding: 15px;
+    }
+
+    .note h3 {
+      margin: 0 0 7px;
+      color: var(--accent);
+      font-size: 16px;
+    }
+
+    .note p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    footer {
+      padding: 16px 2px 26px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 920px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .notes {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stage,
+      canvas {
+        min-height: 50vh;
+      }
+
+      .buttons {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body data-story="omusubi">
+  <main class="app">
+    <header>
+      <p class="eyebrow">Folktale Natural Beauty Camera</p>
+      <h1>昔話カメラ</h1>
+      <p class="lead">
+        プリセットは「おむすびころりん」と「笠地蔵」の2つだけ。
+        現実の風景を壊しすぎず、少しだけ昔話の絵本のように、自然で美しい景色へ変換します。
+      </p>
+
+      <div class="chips">
+        <div class="chip">状態：<strong id="statusText">待機中</strong></div>
+        <div class="chip">物語：<strong id="presetLabel">おむすびころりん</strong></div>
+        <div class="chip">自然美化：<strong id="beautyLabel">72%</strong></div>
+      </div>
+    </header>
+
+    <section class="layout">
+      <div class="viewer">
+        <div class="viewer-top">
+          <div>
+            <strong>Live View</strong>
+            <span>自然美化＋やさしい歪み＋クレパス質感</span>
+          </div>
+          <div class="badge">Natural Folktale Edition</div>
+        </div>
+
+        <div class="stage">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="canvas"></canvas>
+
+          <div id="placeholder" class="placeholder">
+            <div>
+              <p style="margin:0 0 8px;">「カメラを開始」を押すと映像が出ます。</p>
+              <p style="margin:0;">GitHub Pages のURLを Safari で開くと安定します。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <h2>調整</h2>
+        <p class="sub">2つの昔話プリセットだけで、自然に美しく撮れるようにしています。</p>
+
+        <div class="buttons">
+          <button id="startButton" class="primary">カメラを開始</button>
+          <button id="stopButton">停止</button>
+          <button id="switchButton">前後切替</button>
+          <button id="snapshotButton">画像保存</button>
+        </div>
+
+        <div class="group">
+          <h3>昔話プリセット</h3>
+
+          <label class="control">
+            <div class="row">
+              <span>物語</span>
+              <strong id="presetMini">おむすび</strong>
+            </div>
+            <select id="presetSelect">
+              <option value="omusubiKororin">おむすびころりん</option>
+              <option value="kasaJizo">笠地蔵</option>
+            </select>
+          </label>
+
+          <div class="story-card" id="storyDescription">
+            <strong>おむすびころりん</strong>
+            緑、土、山道、木漏れ日を自然に美しくします。少し金色で、やさしい昔話の空気です。
+          </div>
+        </div>
+
+        <div class="group">
+          <h3>美しさ</h3>
+
+          <label class="control">
+            <div class="row"><span>自然美化</span><strong id="beautyOut">72%</strong></div>
+            <input id="beautySlider" type="range" min="0" max="100" value="72">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>クレパス感</span><strong id="crayonOut">42%</strong></div>
+            <input id="crayonSlider" type="range" min="0" max="100" value="42">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>やさしい歪み</span><strong id="distortOut">18%</strong></div>
+            <input id="distortSlider" type="range" min="0" max="100" value="18">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>光のにじみ</span><strong id="bloomOut">22%</strong></div>
+            <input id="bloomSlider" type="range" min="0" max="100" value="22">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>やわらかさ</span><strong id="softOut">54%</strong></div>
+            <input id="softSlider" type="range" min="0" max="100" value="54">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>紙の粒子</span><strong id="grainOut">6%</strong></div>
+            <input id="grainSlider" type="range" min="0" max="100" value="6">
+          </label>
+
+          <label class="control">
+            <div class="row"><span>周辺の余韻</span><strong id="vignetteOut">20%</strong></div>
+            <input id="vignetteSlider" type="range" min="0" max="100" value="20">
+          </label>
+        </div>
+
+        <div class="tips">
+          自然さを優先するため、歪みとクレパス感は控えめです。
+          もっと絵本風にしたい時は「クレパス感」と「やわらかさ」を少し上げてください。
+        </div>
+      </aside>
+    </section>
+
+    <section class="notes">
+      <article class="note">
+        <h3>おむすびころりん</h3>
+        <p>
+          草、木、土、山道を少し金色に整えます。
+          ころころ感は弱いゆらぎとして入れ、現実感を残します。
+        </p>
+      </article>
+
+      <article class="note">
+        <h3>笠地蔵</h3>
+        <p>
+          雪、石、曇り空、冬の道を青白く静かに整えます。
+          寒さの中に、淡い灯りのような温かさを少し残します。
+        </p>
+      </article>
+    </section>
+
+    <footer>
+      GitHub の index.html をこの内容に置き換えて、Commit changes を押してください。
+      1〜3分後に GitHub Pages のURLを再読み込みすると反映されます。
+    </footer>
+  </main>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const placeholder = document.getElementById("placeholder");
+
+    const startButton = document.getElementById("startButton");
+    const stopButton = document.getElementById("stopButton");
+    const switchButton = document.getElementById("switchButton");
+    const snapshotButton = document.getElementById("snapshotButton");
+
+    const presetSelect = document.getElementById("presetSelect");
+    const statusText = document.getElementById("statusText");
+    const presetLabel = document.getElementById("presetLabel");
+    const presetMini = document.getElementById("presetMini");
+    const beautyLabel = document.getElementById("beautyLabel");
+    const storyDescription = document.getElementById("storyDescription");
+
+    const sliders = {
+      beauty: document.getElementById("beautySlider"),
+      crayon: document.getElementById("crayonSlider"),
+      distort: document.getElementById("distortSlider"),
+      bloom: document.getElementById("bloomSlider"),
+      soft: document.getElementById("softSlider"),
+      grain: document.getElementById("grainSlider"),
+      vignette: document.getElementById("vignetteSlider")
+    };
+
+    const outs = {
+      beauty: document.getElementById("beautyOut"),
+      crayon: document.getElementById("crayonOut"),
+      distort: document.getElementById("distortOut"),
+      bloom: document.getElementById("bloomOut"),
+      soft: document.getElementById("softOut"),
+      grain: document.getElementById("grainOut"),
+      vignette: document.getElementById("vignetteOut")
+    };
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    const srcCanvas = document.createElement("canvas");
+    const srcCtx = srcCanvas.getContext("2d", { willReadFrequently: true });
+
+    const colorCanvas = document.createElement("canvas");
+    const colorCtx = colorCanvas.getContext("2d", { willReadFrequently: true });
+
+    const distortCanvas = document.createElement("canvas");
+    const distortCtx = distortCanvas.getContext("2d", { willReadFrequently: true });
+
+    const bloomCanvas = document.createElement("canvas");
+    const bloomCtx = bloomCanvas.getContext("2d");
+
+    const paperCanvas = document.createElement("canvas");
+    const paperCtx = paperCanvas.getContext("2d");
+
+    const noiseCanvas = document.createElement("canvas");
+    const noiseCtx = noiseCanvas.getContext("2d");
+
+    let stream = null;
+    let animationId = null;
+    let facingMode = "environment";
+    let frame = 0;
+    let currentPreset = "omusubiKororin";
+
+    const state = {
+      story: "omusubi",
+      beauty: 0.72,
+      crayon: 0.42,
+      distort: 0.18,
+      bloom: 0.22,
+      soft: 0.54,
+      grain: 0.06,
+      vignette: 0.20,
+      saturation: 1.06,
+      contrast: 1.05,
+      warmth: 0.55,
+      coolness: 0.00,
+      snow: 0.00,
+      centerGlow: 0.18
+    };
+
+    const presets = {
+      omusubiKororin: {
+        label: "おむすびころりん",
+        mini: "おむすび",
+        story: "omusubi",
+        description: "<strong>おむすびころりん</strong>緑、土、山道、木漏れ日を自然に美しくします。少し金色で、やさしい昔話の空気です。",
+        beauty: 0.72,
+        crayon: 0.42,
+        distort: 0.18,
+        bloom: 0.22,
+        soft: 0.54,
+        grain: 0.06,
+        vignette: 0.20,
+        saturation: 1.06,
+        contrast: 1.05,
+        warmth: 0.55,
+        coolness: 0.00,
+        snow: 0.00,
+        centerGlow: 0.18
+      },
+
+      kasaJizo: {
+        label: "笠地蔵",
+        mini: "笠地蔵",
+        story: "kasa",
+        description: "<strong>笠地蔵</strong>雪、石、冬の道、曇り空を静かに美しくします。青白い空気の中に、淡い灯りの温かさを少し残します。",
+        beauty: 0.66,
+        crayon: 0.38,
+        distort: 0.10,
+        bloom: 0.26,
+        soft: 0.70,
+        grain: 0.10,
+        vignette: 0.34,
+        saturation: 0.86,
+        contrast: 0.98,
+        warmth: 0.12,
+        coolness: 0.55,
+        snow: 0.35,
+        centerGlow: 0.26
+      }
+    };
+
+    startButton.addEventListener("click", startCamera);
+    stopButton.addEventListener("click", stopCamera);
+    switchButton.addEventListener("click", switchCamera);
+    snapshotButton.addEventListener("click", saveSnapshot);
+
+    presetSelect.addEventListener("change", () => applyPreset(presetSelect.value));
+
+    Object.entries(sliders).forEach(([key, slider]) => {
+      slider.addEventListener("input", () => {
+        syncSlidersToState();
+        updateOutputs();
+      });
+    });
+
+    function applyPreset(name) {
+      const preset = presets[name];
+      if (!preset) return;
+
+      currentPreset = name;
+      Object.assign(state, preset);
+
+      document.body.dataset.story = preset.story;
+      presetSelect.value = name;
+      presetLabel.textContent = preset.label;
+      presetMini.textContent = preset.mini;
+      storyDescription.innerHTML = preset.description;
+
+      syncStateToSliders();
+      updateOutputs();
+    }
+
+    function syncSlidersToState() {
+      state.beauty = Number(sliders.beauty.value) / 100;
+      state.crayon = Number(sliders.crayon.value) / 100;
+      state.distort = Number(sliders.distort.value) / 100;
+      state.bloom = Number(sliders.bloom.value) / 100;
+      state.soft = Number(sliders.soft.value) / 100;
+      state.grain = Number(sliders.grain.value) / 100;
+      state.vignette = Number(sliders.vignette.value) / 100;
+    }
+
+    function syncStateToSliders() {
+      sliders.beauty.value = Math.round(state.beauty * 100);
+      sliders.crayon.value = Math.round(state.crayon * 100);
+      sliders.distort.value = Math.round(state.distort * 100);
+      sliders.bloom.value = Math.round(state.bloom * 100);
+      sliders.soft.value = Math.round(state.soft * 100);
+      sliders.grain.value = Math.round(state.grain * 100);
+      sliders.vignette.value = Math.round(state.vignette * 100);
+    }
+
+    function updateOutputs() {
+      outs.beauty.textContent = Math.round(state.beauty * 100) + "%";
+      outs.crayon.textContent = Math.round(state.crayon * 100) + "%";
+      outs.distort.textContent = Math.round(state.distort * 100) + "%";
+      outs.bloom.textContent = Math.round(state.bloom * 100) + "%";
+      outs.soft.textContent = Math.round(state.soft * 100) + "%";
+      outs.grain.textContent = Math.round(state.grain * 100) + "%";
+      outs.vignette.textContent = Math.round(state.vignette * 100) + "%";
+      beautyLabel.textContent = Math.round(state.beauty * 100) + "%";
+    }
+
+    async function startCamera() {
+      stopCamera();
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        alert("このブラウザではカメラが使えません。Safariで開いてください。");
+        return;
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
+          },
+          audio: false
+        });
+
+        video.srcObject = stream;
+        await video.play();
+
+        placeholder.classList.add("hidden");
+        statusText.textContent = "カメラ動作中";
+
+        resizeCanvases();
+        makePaperTexture();
+        makeNoise();
+        renderLoop();
+      } catch (error) {
+        console.error(error);
+        statusText.textContent = "起動失敗";
+        alert("カメラを起動できませんでした。Safariで開き、カメラ許可を確認してください。");
+      }
+    }
+
+    function stopCamera() {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+
+      placeholder.classList.remove("hidden");
+      statusText.textContent = "待機中";
+    }
+
+    async function switchCamera() {
+      facingMode = facingMode === "environment" ? "user" : "environment";
+      await startCamera();
+    }
+
+    function resizeCanvases() {
+      const vw = video.videoWidth || 1280;
+      const vh = video.videoHeight || 960;
+
+      const maxWidth = 820;
+      const scale = Math.min(1, maxWidth / vw);
+
+      const w = Math.round(vw * scale);
+      const h = Math.round(vh * scale);
+
+      canvas.width = w;
+      canvas.height = h;
+
+      srcCanvas.width = w;
+      srcCanvas.height = h;
+
+      colorCanvas.width = w;
+      colorCanvas.height = h;
+
+      distortCanvas.width = w;
+      distortCanvas.height = h;
+
+      bloomCanvas.width = Math.max(1, Math.round(w / 4));
+      bloomCanvas.height = Math.max(1, Math.round(h / 4));
+    }
+
+    function renderLoop() {
+      if (!stream) return;
+
+      frame += 1;
+
+      const w = canvas.width;
+      const h = canvas.height;
+
+      srcCtx.drawImage(video, 0, 0, w, h);
+
+      const image = srcCtx.getImageData(0, 0, w, h);
+      applyNaturalBeauty(image.data, w, h);
+      colorCtx.putImageData(image, 0, 0);
+
+      if (state.distort > 0.01) {
+        applyGentleDistortion(w, h);
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(distortCanvas, 0, 0);
+      } else {
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(colorCanvas, 0, 0);
+      }
+
+      applySoftFocus();
+      applyBloom();
+      applyCenterGlow();
+      applyVignette();
+      applyPaperOverlay();
+      applyGrain();
+      applySnowMist();
+
+      animationId = requestAnimationFrame(renderLoop);
+    }
+
+    function applyNaturalBeauty(data, w, h) {
+      const beauty = state.beauty;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const pixel = i / 4;
+        const x = pixel % w;
+        const y = Math.floor(pixel / w);
+
+        let r = data[i];
+        let g = data[i + 1];
+        let b = data[i + 2];
+
+        const brightness = getBrightness(r, g, b);
+        const sat = getSaturation(r, g, b);
+
+        let target;
+
+        if (state.story === "omusubi") {
+          target = omusubiPalette(r, g, b, brightness, sat);
+        } else {
+          target = kasaPalette(r, g, b, brightness, sat);
+        }
+
+        r = mix(r, target[0], beauty);
+        g = mix(g, target[1], beauty);
+        b = mix(b, target[2], beauty);
+
+        r = liftShadows(r, brightness, beauty);
+        g = liftShadows(g, brightness, beauty);
+        b = liftShadows(b, brightness, beauty);
+
+        [r, g, b] = adjustSaturation(r, g, b, state.saturation);
+        [r, g, b] = adjustContrast(r, g, b, state.contrast);
+
+        if (state.crayon > 0.01) {
+          [r, g, b] = crayonize(r, g, b, x, y, state.crayon);
+        }
+
+        data[i] = clamp(r);
+        data[i + 1] = clamp(g);
+        data[i + 2] = clamp(b);
+      }
+    }
+
+    function omusubiPalette(r, g, b, brightness, sat) {
+      const shadow = [44, 36, 25];
+      const moss = [94, 130, 75];
+      const straw = [205, 169, 88];
+      const warmLight = [247, 226, 181];
+
+      let color;
+
+      if (brightness < 0.32) {
+        color = blend(shadow, moss, brightness / 0.32);
+      } else if (brightness < 0.70) {
+        color = blend(moss, straw, (brightness - 0.32) / 0.38);
+      } else {
+        color = blend(straw, warmLight, (brightness - 0.70) / 0.30);
+      }
+
+      const keepOriginal = 0.34 + sat * 0.18;
+
+      return [
+        mix(color[0], r, keepOriginal),
+        mix(color[1], g, keepOriginal),
+        mix(color[2], b, keepOriginal)
+      ];
+    }
+
+    function kasaPalette(r, g, b, brightness, sat) {
+      const deepBlue = [28, 39, 58];
+      const stone = [118, 128, 136];
+      const snow = [220, 231, 238];
+      const warmLamp = [242, 220, 180];
+
+      let color;
+
+      if (brightness < 0.36) {
+        color = blend(deepBlue, stone, brightness / 0.36);
+      } else if (brightness < 0.76) {
+        color = blend(stone, snow, (brightness - 0.36) / 0.40);
+      } else {
+        color = blend(snow, warmLamp, (brightness - 0.76) / 0.24);
+      }
+
+      const keepOriginal = 0.42 + sat * 0.12;
+
+      return [
+        mix(color[0], r, keepOriginal),
+        mix(color[1], g, keepOriginal),
+        mix(color[2], b, keepOriginal)
+      ];
+    }
+
+    function liftShadows(value, brightness, amount) {
+      const shadowLift = Math.max(0, 0.45 - brightness) * amount * 28;
+      const highlightHold = Math.max(0, brightness - 0.82) * amount * 14;
+      return value + shadowLift - highlightHold;
+    }
+
+    function applyGentleDistortion(w, h) {
+      const src = colorCtx.getImageData(0, 0, w, h);
+      const dst = distortCtx.createImageData(w, h);
+      const srcData = src.data;
+      const dstData = dst.data;
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const maxR = Math.sqrt(cx * cx + cy * cy);
+      const amount = state.distort;
+      const t = frame * 0.028;
+
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const dx = x - cx;
+          const dy = y - cy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const edge = Math.min(1, dist / maxR);
+
+          let sx = x;
+          let sy = y;
+
+          const waveX = Math.sin(y * 0.026 + t) * 10 * amount;
+          const waveY = Math.cos(x * 0.022 + t * 0.85) * 7 * amount;
+
+          sx += waveX;
+          sy += waveY;
+
+          if (state.story === "omusubi") {
+            const angle = Math.atan2(dy, dx);
+            const roll = Math.sin(edge * Math.PI) * amount * 5;
+            sx += Math.cos(angle + Math.PI / 2) * roll;
+            sy += Math.sin(angle + Math.PI / 2) * roll;
+          }
+
+          if (state.story === "kasa") {
+            sy += Math.sin((x + y) * 0.010 + t * 0.5) * 4 * amount;
+          }
+
+          const c = sample(srcData, w, h, sx, sy);
+          const index = (y * w + x) * 4;
+
+          dstData[index] = c[0];
+          dstData[index + 1] = c[1];
+          dstData[index + 2] = c[2];
+          dstData[index + 3] = 255;
+        }
+      }
+
+      distortCtx.putImageData(dst, 0, 0);
+    }
+
+    function sample(data, w, h, x, y) {
+      const ix = Math.max(0, Math.min(w - 1, Math.round(x)));
+      const iy = Math.max(0, Math.min(h - 1, Math.round(y)));
+      const i = (iy * w + ix) * 4;
+
+      return [
+        data[i],
+        data[i + 1],
+        data[i + 2],
+        data[i + 3]
+      ];
+    }
+
+    function applySoftFocus() {
+      if (state.soft <= 0.01) return;
+
+      const blur = 0.45 + state.soft * 2.1;
+      const alpha = 0.05 + state.soft * 0.13;
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.filter = "blur(" + blur.toFixed(2) + "px)";
+      ctx.drawImage(canvas, 0, 0);
+      ctx.restore();
+    }
+
+    function applyBloom() {
+      if (state.bloom <= 0.01) return;
+
+      bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
+      bloomCtx.drawImage(canvas, 0, 0, bloomCanvas.width, bloomCanvas.height);
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.globalAlpha = 0.06 + state.bloom * 0.28;
+      ctx.filter = "blur(" + (2 + state.bloom * 9).toFixed(2) + "px)";
+      ctx.drawImage(bloomCanvas, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    function applyCenterGlow() {
+      if (state.centerGlow <= 0.01) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w * 0.5;
+      const cy = h * 0.48;
+      const r = Math.max(w, h) * 0.52;
+
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+
+      if (state.story === "kasa") {
+        glow.addColorStop(0, "rgba(255, 238, 205, " + (0.09 * state.centerGlow).toFixed(3) + ")");
+        glow.addColorStop(0.45, "rgba(205, 225, 255, " + (0.06 * state.centerGlow).toFixed(3) + ")");
+        glow.addColorStop(1, "rgba(255,255,255,0)");
+      } else {
+        glow.addColorStop(0, "rgba(255, 224, 155, " + (0.10 * state.centerGlow).toFixed(3) + ")");
+        glow.addColorStop(0.5, "rgba(255, 190, 120, " + (0.05 * state.centerGlow).toFixed(3) + ")");
+        glow.addColorStop(1, "rgba(255,255,255,0)");
+      }
+
+      ctx.save();
+      ctx.globalCompositeOperation = "screen";
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
+    function applyVignette() {
+      if (state.vignette <= 0.01) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = Math.max(w, h) * 0.75;
+      const strength = 0.10 + state.vignette * 0.34;
+
+      const grad = ctx.createRadialGradient(cx, cy, r * 0.18, cx, cy, r);
+      grad.addColorStop(0, "rgba(0,0,0,0)");
+      grad.addColorStop(0.58, "rgba(0,0,0," + (strength * 0.20).toFixed(3) + ")");
+      grad.addColorStop(1, "rgba(0,0,0," + strength.toFixed(3) + ")");
+
+      ctx.save();
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
+    function makePaperTexture() {
+      paperCanvas.width = 320;
+      paperCanvas.height = 320;
+
+      paperCtx.clearRect(0, 0, paperCanvas.width, paperCanvas.height);
+      paperCtx.fillStyle = "rgb(240, 232, 214)";
+      paperCtx.fillRect(0, 0, paperCanvas.width, paperCanvas.height);
+
+      for (let i = 0; i < 15000; i++) {
+        const x = Math.random() * paperCanvas.width;
+        const y = Math.random() * paperCanvas.height;
+        const a = Math.random() * 0.07;
+
+        paperCtx.fillStyle = "rgba(120, 95, 70, " + a + ")";
+        paperCtx.fillRect(x, y, 1, 1);
+      }
+
+      for (let i = 0; i < 900; i++) {
+        const x = Math.random() * paperCanvas.width;
+        const y = Math.random() * paperCanvas.height;
+        const len = 3 + Math.random() * 9;
+        const angle = Math.random() * Math.PI;
+
+        paperCtx.strokeStyle = "rgba(150, 120, 90, " + (0.025 + Math.random() * 0.035) + ")";
+        paperCtx.lineWidth = 1;
+        paperCtx.beginPath();
+        paperCtx.moveTo(x, y);
+        paperCtx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+        paperCtx.stroke();
+      }
+    }
+
+    function makeNoise() {
+      noiseCanvas.width = 220;
+      noiseCanvas.height = 220;
+
+      const image = noiseCtx.createImageData(noiseCanvas.width, noiseCanvas.height);
+      const data = image.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const n = Math.floor(Math.random() * 255);
+        data[i] = n;
+        data[i + 1] = n;
+        data[i + 2] = n;
+        data[i + 3] = 255;
+      }
+
+      noiseCtx.putImageData(image, 0, 0);
+    }
+
+    function applyPaperOverlay() {
+      if (state.crayon <= 0.01) return;
+
+      ctx.save();
+      ctx.globalAlpha = 0.035 + state.crayon * 0.11;
+      ctx.globalCompositeOperation = "multiply";
+      ctx.drawImage(
+        paperCanvas,
+        -(frame % 18),
+        -(frame % 14),
+        canvas.width + 18,
+        canvas.height + 14
+      );
+      ctx.restore();
+
+      ctx.save();
+      ctx.globalAlpha = 0.02 + state.crayon * 0.05;
+      ctx.fillStyle = state.story === "kasa"
+        ? "rgba(230, 240, 255, 0.30)"
+        : "rgba(255, 244, 224, 0.32)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    function applyGrain() {
+      if (state.grain <= 0.01) return;
+
+      ctx.save();
+      ctx.globalAlpha = 0.015 + state.grain * 0.10;
+      ctx.globalCompositeOperation = "soft-light";
+      ctx.drawImage(
+        noiseCanvas,
+        -(frame % 20),
+        -(frame % 16),
+        canvas.width + 20,
+        canvas.height + 20
+      );
+      ctx.restore();
+    }
+
+    function applySnowMist() {
+      if (state.snow <= 0.01) return;
+
+      const w = canvas.width;
+      const h = canvas.height;
+      const count = Math.floor(50 * state.snow);
+
+      ctx.save();
+      ctx.globalAlpha = 0.20 * state.snow;
+      ctx.fillStyle = "rgba(255,255,255,0.85)";
+
+      for (let i = 0; i < count; i++) {
+        const x = (i * 83 + frame * 0.7) % w;
+        const y = (i * 47 + frame * 0.35) % h;
+        const size = 0.7 + (i % 3) * 0.45;
+
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function crayonize(r, g, b, x, y, amount) {
+      const steps = Math.max(5, Math.round(14 - amount * 7));
+      const stepSize = 255 / steps;
+
+      let rr = Math.round(r / stepSize) * stepSize;
+      let gg = Math.round(g / stepSize) * stepSize;
+      let bb = Math.round(b / stepSize) * stepSize;
+
+      const paper = state.story === "kasa"
+        ? [232, 238, 244]
+        : [239, 229, 207];
+
+      const paperMix = 0.035 + amount * 0.10;
+
+      rr = mix(rr, paper[0], paperMix);
+      gg = mix(gg, paper[1], paperMix);
+      bb = mix(bb, paper[2], paperMix);
+
+      const strokeA = Math.sin(x * 0.18 + y * 0.045);
+      const strokeB = Math.cos(y * 0.21 - x * 0.03);
+      const strokeC = Math.sin((x + y) * 0.075);
+
+      const wax = (strokeA + strokeB + strokeC) / 3;
+      const lift = wax * 10 * amount;
+
+      rr += lift;
+      gg += lift * 0.92;
+      bb += lift * 0.82;
+
+      return [rr, gg, bb];
+    }
+
+    function adjustSaturation(r, g, b, amount) {
+      const gray = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+      return [
+        gray + (r - gray) * amount,
+        gray + (g - gray) * amount,
+        gray + (b - gray) * amount
+      ];
+    }
+
+    function adjustContrast(r, g, b, amount) {
+      return [
+        (r - 128) * amount + 128,
+        (g - 128) * amount + 128,
+        (b - 128) * amount + 128
+      ];
+    }
+
+    function getBrightness(r, g, b) {
+      return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+    }
+
+    function getSaturation(r, g, b) {
+      const max = Math.max(r, g, b);
+      const min = Math.min(r, g, b);
+      if (max === 0) return 0;
+      return (max - min) / max;
+    }
+
+    function blend(a, b, t) {
+      const x = Math.max(0, Math.min(1, t));
+
+      return [
+        a[0] + (b[0] - a[0]) * x,
+        a[1] + (b[1] - a[1]) * x,
+        a[2] + (b[2] - a[2]) * x
+      ];
+    }
+
+    function mix(a, b, t) {
+      return a * (1 - t) + b * t;
+    }
+
+    function clamp(v) {
+      return Math.max(0, Math.min(255, Math.round(v)));
+    }
+
+    function saveSnapshot() {
+      if (!canvas.width || !canvas.height) {
+        alert("先にカメラを開始してください。");
+        return;
+      }
+
+      const link = document.createElement("a");
+      const now = new Date();
+
+      const filename =
+        "folktale-camera-" +
+        currentPreset + "-" +
+        now.getFullYear() + "-" +
+        String(now.getMonth() + 1).padStart(2, "0") + "-" +
+        String(now.getDate()).padStart(2, "0") + "-" +
+        String(now.getHours()).padStart(2, "0") +
+        String(now.getMinutes()).padStart(2, "0") +
+        String(now.getSeconds()).padStart(2, "0") +
+        ".png";
+
+      link.download = filename;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+
+    applyPreset("omusubiKororin");
+  </script>
+</body>
+</html>
