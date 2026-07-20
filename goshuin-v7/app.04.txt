@@ -1,0 +1,23 @@
+  }catch(err){busy=false;source=null;events=[];generate.disabled=true;setStatus(safeError(err));file.value=''}
+}
+function safeError(err){var msg=err&&err.message?String(err.message):'処理できませんでした。';return msg.slice(0,220)}
+function startScan(){cancelAnimationFrame(scanFrame);scan.classList.add('active');previewCard.classList.add('playing');function frame(){if(audio.paused||audio.ended){scan.classList.remove('active');previewCard.classList.remove('playing');return}var intro=songMeta?songMeta.intro:0,length=songMeta?songMeta.length:Math.max(1,audio.duration),p=clamp((audio.currentTime-intro)/Math.max(.1,length),0,1);scan.style.left=(p*100)+'%';scanFrame=requestAnimationFrame(frame)}frame()}
+function cleanup(){cancelAnimationFrame(scanFrame);clearTimeout(analyzeTimer);if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=''}audio.removeAttribute('src');audio.load();source=null;events=[];clusters=[];canvas.width=1;canvas.height=1;maskCanvas.width=1;maskCanvas.height=1}
+
+['dragenter','dragover'].forEach(function(type){dropZone.addEventListener(type,function(e){e.preventDefault();e.stopPropagation();if(e.dataTransfer)e.dataTransfer.dropEffect='copy';dropZone.classList.add('dragover')})});
+['dragleave','drop'].forEach(function(type){dropZone.addEventListener(type,function(e){e.preventDefault();e.stopPropagation();dropZone.classList.remove('dragover')})});
+dropZone.addEventListener('drop',function(e){var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)loadImage(f)});
+dropZone.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();file.click()}});
+file.addEventListener('change',function(){loadImage(file.files&&file.files[0])});
+steps.addEventListener('input',function(){$('stepsOut').textContent=steps.value;if(source)scheduleAnalyze()});
+colorSensitivity.addEventListener('input',function(){$('colorSensitivityOut').textContent=sensitivityLabel();if(source)scheduleAnalyze()});
+paperCorrection.addEventListener('change',function(){if(source)scheduleAnalyze()});
+showMask.addEventListener('change',function(){if(!source)return;if(showMask.checked)renderMask();else{maskCanvas.hidden=true;maskCtx.clearRect(0,0,maskCanvas.width,maskCanvas.height)}});
+bpm.addEventListener('input',function(){$('bpmOut').textContent=bpm.value});mechanism.addEventListener('input',function(){$('mechanismOut').textContent=mechanism.value});
+test.addEventListener('click',makeTest);generate.addEventListener('click',makeSong);
+listen.addEventListener('click',function(){if(!audio.src){setStatus('先に音声を作ってください。');return}audio.play().then(function(){setStatus('再生中です。');startScan()}).catch(function(){setStatus('標準プレーヤーの「▶︎」を押してください。')})});
+audio.addEventListener('play',startScan);audio.addEventListener('pause',function(){scan.classList.remove('active');previewCard.classList.remove('playing')});audio.addEventListener('ended',function(){scan.classList.remove('active');previewCard.classList.remove('playing');scan.style.left='0%'});
+window.addEventListener('securitypolicyviolation',function(){setStatus('安全設定により外部通信または外部資源の読み込みを遮断しました。')});
+window.addEventListener('pagehide',cleanup,{once:true});window.addEventListener('beforeunload',cleanup,{once:true});
+$('colorSensitivityOut').textContent=sensitivityLabel();
+})();
