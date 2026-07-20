@@ -1,0 +1,44 @@
+      else if(c.color){var col=clusters.length?clusters[nearestCenter({l:c.lab.l,a:c.lab.a,b:c.lab.b},clusters)].rgb:{r:c.r,g:c.g,b:c.b};maskCtx.fillStyle='rgba('+col.r+','+col.g+','+col.b+',.48)';maskCtx.fillRect(x,y,stride,stride)}
+    }
+  }
+  maskCanvas.hidden=false;
+}
+function scheduleAnalyze(){clearTimeout(analyzeTimer);analyzeTimer=setTimeout(analyze,180)}
+
+function random01(){if(window.crypto&&window.crypto.getRandomValues){var a=new Uint32Array(1);window.crypto.getRandomValues(a);return a[0]/4294967296}return Math.random()}
+function seeded(seed){var x=seed|0;return function(){x^=x<<13;x^=x>>>17;x^=x<<5;return((x>>>0)/4294967296)}}
+function ascii(view,offset,text){for(var i=0;i<text.length;i++)view.setUint8(offset+i,text.charCodeAt(i))}
+function wavStereo(left,right,sr){
+  var length=Math.min(left.length,right.length),buffer=new ArrayBuffer(44+length*4),view=new DataView(buffer);
+  ascii(view,0,'RIFF');view.setUint32(4,36+length*4,true);ascii(view,8,'WAVE');ascii(view,12,'fmt ');view.setUint32(16,16,true);view.setUint16(20,1,true);view.setUint16(22,2,true);view.setUint32(24,sr,true);view.setUint32(28,sr*4,true);view.setUint16(32,4,true);view.setUint16(34,16,true);ascii(view,36,'data');view.setUint32(40,length*4,true);
+  for(var i=0;i<length;i++){var l=clamp(left[i],-1,1),r=clamp(right[i],-1,1),o=44+i*4;view.setInt16(o,l<0?l*32768:l*32767,true);view.setInt16(o+2,r<0?r*32768:r*32767,true)}
+  return new Blob([buffer],{type:'audio/wav'});
+}
+function mixSample(left,right,index,value,pan){if(index<0||index>=left.length)return;var angle=(clamp(pan,-1,1)+1)*Math.PI/4;left[index]+=value*Math.cos(angle);right[index]+=value*Math.sin(angle)}
+function addMusicBox(left,right,sr,start,midi,volume,pan,seed,duration){
+  var begin=Math.floor(start*sr),end=Math.min(left.length,begin+Math.floor(duration*sr)),f=hz(midi),rnd=seeded(seed);
+  var partials=[1,2.008,2.97,4.075,5.42,6.76],amps=[1,.48,.24,.12,.068,.036],decays=[1.12,.72,.48,.34,.25,.2],phases=[];
+  for(var p=0;p<partials.length;p++)phases.push(rnd()*Math.PI*2);
+  for(var i=begin;i<end;i++){
+    var t=(i-begin)/sr,attack=Math.min(1,t/.0018),body=Math.exp(-t/1.05)+.18*Math.exp(-t/2.6),s=0;
+    var flutter=.012*Math.sin(2*Math.PI*5.1*t+phases[0])+.005*Math.sin(2*Math.PI*8.7*t+phases[1]);
+    for(var j=0;j<partials.length;j++)s+=Math.sin(2*Math.PI*f*partials[j]*t+phases[j]+flutter*partials[j])*amps[j]*Math.exp(-t/decays[j]);
+    s+=.11*Math.sin(2*Math.PI*(f*.503)*t+phases[2])*Math.exp(-t/.42);if(t<.016)s+=(rnd()*2-1)*(.12*(1-t/.016));mixSample(left,right,i,s*attack*body*volume*.19,pan);
+  }
+}
+function addClick(left,right,sr,start,volume,pan,seed){var begin=Math.floor(start*sr),end=Math.min(left.length,begin+Math.floor(.04*sr)),rnd=seeded(seed);for(var i=begin;i<end;i++){var t=(i-begin)/sr,e=Math.exp(-t/.006),noise=(rnd()*2-1)*.55,tone=Math.sin(2*Math.PI*1850*t)*.45;mixSample(left,right,i,(noise+tone)*e*volume,pan)}}
+function addWindUp(left,right,sr,amount,seed){if(amount<=0)return;var rnd=seeded(seed),t=.08;while(t<1.34){addClick(left,right,sr,t,.045+amount*.11,-.28+rnd()*.55,seed+Math.floor(t*10000));t+=.105-rnd()*.035}var end=Math.min(left.length,Math.floor(1.5*sr));for(var i=0;i<end;i++){var x=i/sr,e=Math.sin(Math.PI*clamp(x/1.48,0,1)),whirr=Math.sin(2*Math.PI*(74+38*x)*x)*.018+(rnd()*2-1)*.008;mixSample(left,right,i,whirr*e*amount,0)}}
+function addMechanismBed(left,right,sr,start,end,stepSec,amount,seed){if(amount<=0)return;var rnd=seeded(seed),t=start;while(t<end){addClick(left,right,sr,t,.012+amount*.035,-.35+rnd()*.7,seed+Math.floor(t*1000));t+=stepSec*(.98+(rnd()-.5)*.035)}var a=Math.floor(start*sr),z=Math.min(left.length,Math.floor(end*sr));for(var i=a;i<z;i++){var x=(i-a)/sr,slow=.0045*Math.sin(2*Math.PI*2.15*x)+(rnd()*2-1)*.0017;mixSample(left,right,i,slow*amount,0)}}
+function normalize(left,right){var peak=.0001,i;for(i=0;i<left.length;i++)peak=Math.max(peak,Math.abs(left[i]),Math.abs(right[i]));var gain=Math.min(1.8,.91/peak);for(i=0;i<left.length;i++){left[i]=Math.tanh(left[i]*gain);right[i]=Math.tanh(right[i]*gain)}}
+function chooseKey(){var pc=Math.floor(random01()*12);if(pc===lastKey)pc=(pc+1+Math.floor(random01()*11))%12;lastKey=pc;var minor=random01()<.4,intervals=minor?MINOR:MAJOR,base=60+pc;while(base<64)base+=12;while(base>71)base-=12;var notes=[];for(var oct=0;oct<3;oct++)for(var i=0;i<intervals.length;i++)notes.push(base+intervals[i]+oct*12);return{pc:pc,minor:minor,intervals:intervals,base:base,notes:notes,name:ROOT_NAMES[pc]+(minor?' minor':' major'),jp:ROOT_NAMES[pc]+(minor?'短調':'長調')}}
+function useBlob(blob,name,meta){if(audioUrl)URL.revokeObjectURL(audioUrl);audioUrl=URL.createObjectURL(blob);songMeta=meta||null;audio.pause();audio.src=audioUrl;audio.load();download.href=audioUrl;download.download=name;download.hidden=false;listen.disabled=false;setStatus('音声ができました。黒い「できた曲を再生」を押してください。')}
+function makeTest(){if(busy)return;busy=true;test.disabled=true;setStatus('オルゴールの音色を作っています…');setTimeout(function(){try{var sr=32000,duration=7,left=new Float32Array(sr*duration),right=new Float32Array(sr*duration),amount=Number(mechanism.value)/100;addWindUp(left,right,sr,amount,1097);var notes=[72,76,79,84,79,76,72];for(var i=0;i<notes.length;i++)addMusicBox(left,right,sr,1.45+i*.58,notes[i],.88,(i/(notes.length-1)-.5)*.45,400+i,3.1);addMechanismBed(left,right,sr,1.43,6.1,.58,amount,714);normalize(left,right);$('keyName').textContent='C長調・音色サンプル';useBlob(wavStereo(left,right,sr),'musicbox-sound-test.wav',{intro:1.45,length:4.2})}catch(err){setStatus('音声生成エラー：'+safeError(err))}busy=false;test.disabled=false},20)}
+function makeSong(){
+  if(!events.length||busy){if(!events.length)setStatus('先に御朱印の写真を選んでください。');return}
+  busy=true;generate.disabled=true;listen.disabled=true;setStatus('金属の櫛歯とゼンマイ音を合成しています…');previewCard.classList.add('playing');
+  setTimeout(function(){
+    try{
+      var key=chooseKey(),sr=32000,stepSec=60/Number(bpm.value)/2,intro=1.48,tail=3.4,duration=intro+events.length*stepSec+tail;
+      var left=new Float32Array(Math.ceil(duration*sr)),right=new Float32Array(Math.ceil(duration*sr)),mech=Number(mechanism.value)/100,seed=Math.floor(random01()*2147483000),previous=null,sealIndex=0;
+      addWindUp(left,right,sr,mech,seed+7);
+      for(var i=0;i<events.length;i++){
