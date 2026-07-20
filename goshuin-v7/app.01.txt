@@ -1,0 +1,84 @@
+    if(!best||Math.sqrt(bestScore/Math.max(.01,best.w))<16)break;
+    centers.push(copyPoint(best));
+  }
+  for(var iter=0;iter<8;iter++){
+    var sums=[];for(var c=0;c<centers.length;c++)sums.push({l:0,a:0,b:0,r:0,g:0,bb:0,w:0,n:0});
+    for(var j=0;j<points.length;j++){
+      var idx=nearestCenter(points[j],centers),s=sums[idx],wt=points[j].w;
+      s.l+=points[j].l*wt;s.a+=points[j].a*wt;s.b+=points[j].b*wt;s.r+=points[j].r*wt;s.g+=points[j].g*wt;s.bb+=points[j].bb*wt;s.w+=wt;s.n++;
+    }
+    for(var q=0;q<centers.length;q++)if(sums[q].w>0){centers[q]={l:sums[q].l/sums[q].w,a:sums[q].a/sums[q].w,b:sums[q].b/sums[q].w,r:sums[q].r/sums[q].w,g:sums[q].g/sums[q].w,bb:sums[q].bb/sums[q].w,w:sums[q].w,n:sums[q].n}}
+  }
+  var total=0;for(var p=0;p<centers.length;p++)total+=centers[p].w||0;
+  centers=centers.filter(function(c){return c.n>=5&&c.w/Math.max(.001,total)>.012});
+  centers.sort(function(a,b){return b.w-a.w});
+  for(var k=0;k<centers.length;k++){centers[k].rgb={r:Math.round(centers[k].r),g:Math.round(centers[k].g),b:Math.round(centers[k].bb)};centers[k].name=colorName(centers[k].rgb);centers[k].h=rgbToHsv(centers[k].rgb.r,centers[k].rgb.g,centers[k].rgb.b).h}
+  return centers.slice(0,6);
+}
+function copyPoint(p){return{l:p.l,a:p.a,b:p.b,r:p.r,g:p.g,bb:p.bb,w:p.w,n:1}}
+function colorDistance(p,c){var dl=(p.l-c.l)*.42,da=p.a-c.a,db=p.b-c.b;return dl*dl+da*da+db*db}
+function minColorDistance(p,cs){var d=Infinity;for(var i=0;i<cs.length;i++)d=Math.min(d,colorDistance(p,cs[i]));return d}
+function nearestCenter(p,cs){var best=0,d=Infinity;for(var i=0;i<cs.length;i++){var x=colorDistance(p,cs[i]);if(x<d){d=x;best=i}}return best}
+function updatePalette(items){
+  palette.replaceChildren();
+  for(var i=0;i<items.length;i++){
+    var sw=document.createElement('button');sw.type='button';sw.tabIndex=-1;
+    sw.style.background='rgb('+items[i].rgb.r+' '+items[i].rgb.g+' '+items[i].rgb.b+')';
+    sw.setAttribute('aria-label',items[i].name);sw.title=items[i].name;palette.appendChild(sw);
+  }
+  paletteWrap.hidden=items.length===0;
+}
+
+function analyze(){
+  if(!source||busy)return;
+  busy=true;generate.disabled=true;setStatus('用紙色と彩色を再解析しています…');
+  setTimeout(function(){
+    try{
+      paper=estimatePaper(source);
+      paperSwatch.style.background='rgb('+paper.r+' '+paper.g+' '+paper.b+')';paperLabel.textContent=paperDescription(paper)+' / RGB '+paper.r+', '+paper.g+', '+paper.b;
+      var pc=correctedRGB(paper.r,paper.g,paper.b),paperLab=rgbToLab(pc.r,pc.g,pc.b),t=thresholds();
+      var w=source.width,h=source.height,data=source.data,sampleStride=Math.max(2,Math.floor(Math.sqrt(w*h/120000))),colorPoints=[];
+      for(var sy=0;sy<h;sy+=sampleStride){
+        for(var sx=0;sx<w;sx+=sampleStride){
+          var sk=(sy*w+sx)*4,cl=classifyPixel(data[sk],data[sk+1],data[sk+2],paperLab,t);
+          if(cl.color){var weight=clamp((cl.de-t.de)/20+.3,0.18,2.2)*clamp(cl.chroma/35,.45,2);colorPoints.push({l:cl.lab.l,a:cl.lab.a,b:cl.lab.b,r:cl.r,g:cl.g,bb:cl.b,w:weight})}
+        }
+      }
+      clusters=clusterColors(colorPoints);updatePalette(clusters);
+
+      var count=Number(steps.value),slice=w/count,stride=Math.max(1,Math.floor(Math.min(w,h)/420)),out=[],notes=0,repeats=0,seals=0,colorSlices=0;
+      for(var s=0;s<count;s++){
+        var x0=Math.floor(s*slice),x1=Math.min(w,Math.ceil((s+1)*slice));
+        var all=0,ink=0,red=0,color=0,weightedY=0,inkWeight=0,clusterWeights=new Float64Array(Math.max(1,clusters.length)),satSum=0;
+        for(var y=0;y<h;y+=stride){
+          for(var x=x0;x<x1;x+=stride){
+            var k=(y*w+x)*4,c=classifyPixel(data[k],data[k+1],data[k+2],paperLab,t);all++;
+            if(c.red)red++;
+            if(c.color){color++;satSum+=c.hsv.s;if(clusters.length){var ci=nearestCenter({l:c.lab.l,a:c.lab.a,b:c.lab.b},clusters);clusterWeights[ci]+=clamp(c.chroma/30,.3,2)}}
+            if(c.ink){var deep=clamp((paperLab.l-c.lab.l)/65,.06,1);ink++;inkWeight+=deep;weightedY+=y*deep}
+          }
+        }
+        var inkRatio=ink/Math.max(1,all),redRatio=red/Math.max(1,all),colorRatio=color/Math.max(1,all),has=inkRatio>.003&&inkWeight>0;
+        var yPos=has?weightedY/inkWeight:h/2,degree=clamp(Math.round((1-yPos/h)*18),0,18);
+        var dominant=0,domWeight=0;for(var cw=0;cw<clusterWeights.length;cw++)if(clusterWeights[cw]>domWeight){domWeight=clusterWeights[cw];dominant=cw}
+        var colorAccent=colorRatio>.0015&&domWeight>.1&&clusters.length>0,repeat=has&&inkRatio>.043,seal=redRatio>.0024;
+        var hue=colorAccent?clusters[dominant].h:0,colorDegree=colorAccent?clamp(Math.floor(((hue+12)%360)/360*7),0,6):0;
+        out.push({degree:degree,has:has,volume:clamp(.38+inkRatio*4.8,.38,.95),repeat:repeat,seal:seal,density:inkRatio,x:s/(count-1||1),color:colorAccent,hue:hue,colorDegree:colorDegree,colorRatio:colorRatio,colorStrength:clamp(colorRatio*9+(satSum/Math.max(1,color))*.28,.18,.95),cluster:dominant});
+        if(has)notes++;if(repeat)repeats++;if(seal)seals++;if(colorAccent)colorSlices++;
+      }
+      events=out;$('nNotes').textContent=notes+'音';$('nRepeat').textContent=repeats+'か所';$('nSeal').textContent=seals+'か所';$('nColor').textContent=clusters.length+'色';
+      analysisLabel.textContent=count+' SLICES / '+clusters.length+' COLORS';generate.disabled=false;
+      if(showMask.checked)renderMask();else{maskCanvas.hidden=true;maskCtx.clearRect(0,0,maskCanvas.width,maskCanvas.height)}
+      setStatus(clusters.length?'彩色を'+clusters.length+'色に整理して読み取りました。色見本と画像を確認してください。':'明確な彩色は検出されませんでした。淡い色がある場合は彩色感度を上げてください。');
+    }catch(err){setStatus('解析エラー：'+safeError(err));events=[]}
+    busy=false;generate.disabled=!events.length;
+  },24);
+}
+function renderMask(){
+  if(!source){maskCanvas.hidden=true;return}
+  maskCanvas.width=source.width;maskCanvas.height=source.height;maskCtx.clearRect(0,0,maskCanvas.width,maskCanvas.height);
+  var pc=correctedRGB(paper.r,paper.g,paper.b),paperLab=rgbToLab(pc.r,pc.g,pc.b),t=thresholds(),data=source.data,w=source.width,h=source.height,stride=Math.max(2,Math.floor(Math.min(w,h)/500));
+  for(var y=0;y<h;y+=stride){
+    for(var x=0;x<w;x+=stride){
+      var k=(y*w+x)*4,c=classifyPixel(data[k],data[k+1],data[k+2],paperLab,t);
+      if(c.red){maskCtx.fillStyle='rgba(255,40,30,.48)';maskCtx.fillRect(x,y,stride,stride)}
