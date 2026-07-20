@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#121210">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'self'; img-src 'self' data:; connect-src 'none'; font-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<title>プライバシーと安全設計｜御朱印オルゴール</title>
+<link rel="stylesheet" href="style.css?v=7.3">
+</head>
+<body>
+<main class="policy-page">
+  <a class="back" href="./" rel="noopener">← 御朱印オルゴールへ戻る</a>
+  <p class="kicker">PRIVACY &amp; SECURITY</p>
+  <h1 class="policy-title">プライバシーと<br>安全設計</h1>
+  <section class="policy-card">
+    <h2>画像はアップロードしません</h2>
+    <p>選択した写真はブラウザーのメモリー内で縮小・解析されます。画像、ファイル名、生成音声を運営者のサーバーへ送信する機能はありません。外部API、広告、アクセス解析、Cookie、localStorageも使用しません。</p>
+    <h2>受け付ける画像を限定しています</h2>
+    <p>JPEG・PNG・WebPのみ、最大20MBです。拡張子やブラウザーの申告だけを信用せず、ファイル先頭の識別情報と画像寸法を確認します。極端に巨大な画像は処理前に拒否し、解析時は安全な大きさまで縮小します。</p>
+    <h2>通信と埋め込みを抑制しています</h2>
+    <p>Content Security Policyで外部通信、外部スクリプト、プラグイン、フォーム送信、フレーム読み込みを禁止しています。ページが他サイトのフレーム内で開かれた場合はアプリを停止します。</p>
+    <h2>端末上のデータを破棄します</h2>
+    <p>画像読込用の一時URLは直ちに破棄し、ページを閉じる際には生成音声の一時URL、画像画素、キャンバスを解放します。WAVを保存した場合、そのファイルは利用者自身の端末に残ります。</p>
+    <h2>利用時のお願い</h2>
+    <p>公開・共有する権利のある御朱印写真を使用してください。個人名、住所、顔、位置情報などが写真内に写っている場合、画面共有やスクリーンショットには注意してください。色の検出と音楽化は創作的な変換であり、寺社による公式な解釈ではありません。</p>
+    <p class="small">このページは静的サイトとして配信されています。ホスティング事業者が通常の配信ログを保持する可能性はありますが、本アプリから画像内容を送信することはありません。</p>
+  </section>
+</main>
+</body>
+</html>
