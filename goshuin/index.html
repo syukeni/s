@@ -2,369 +2,51 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#6f4027">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>朱音オルゴール</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6b3f29">
+<title>朱音オルゴール v4</title>
 <style>
-:root{
---paper:#f7efe2;--ink:#2d211b;--wood:#73452d;--wood2:#4b2a1b;
---red:#a7322a;--gold:#c0913d;--panel:rgba(255,253,248,.94);
---line:rgba(65,39,25,.18);--muted:#74675f;--ok:#176b45;--warn:#8f351e;
-}
-*{box-sizing:border-box}
-html{background:var(--paper)}
-body{margin:0;min-height:100vh;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;background:radial-gradient(circle at 10% -5%,rgba(192,145,61,.22),transparent 32rem),repeating-linear-gradient(90deg,rgba(115,69,45,.025) 0 2px,transparent 2px 11px),var(--paper)}
-main{width:min(920px,100%);margin:auto;padding:16px 12px calc(50px + env(safe-area-inset-bottom))}
-header{padding:20px;border-radius:24px;color:#fffaf1;background:linear-gradient(135deg,var(--wood2),var(--wood));box-shadow:0 16px 38px rgba(65,37,22,.2)}
-h1{margin:0;font-family:"Yu Mincho","Hiragino Mincho ProN",serif;font-size:clamp(2rem,9vw,3rem);letter-spacing:.09em}
-header p{margin:9px 0 0;line-height:1.75;opacity:.9}
-.card{margin-top:14px;padding:16px;border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:0 14px 34px rgba(65,37,22,.08)}
-.runtime{display:flex;align-items:center;gap:9px;margin-bottom:13px;padding:10px 12px;border-radius:14px;background:#f2e8d7;color:var(--warn);font-weight:750;font-size:.92rem}
-.runtime.ok{background:#e3f2e9;color:var(--ok)}
-.lamp{width:11px;height:11px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 16%,transparent)}
-noscript{display:block;margin-bottom:14px;padding:14px;border-radius:14px;background:#ffe4dc;color:#781b12;font-weight:800;line-height:1.7}
-.grid{display:grid;gap:13px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));align-items:end}
-label{display:block;font-weight:800;font-size:.94rem}
-input,select,button{font:inherit}
-input[type=file],select{width:100%;margin-top:7px;padding:12px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
-input[type=range]{width:100%;margin-top:14px;accent-color:var(--red)}
-.buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:15px}
-button{width:100%;min-height:54px;border:0;border-radius:999px;padding:13px 15px;font-weight:900;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-button.primary{color:#fff;background:linear-gradient(135deg,var(--red),#7f201c);box-shadow:0 8px 20px rgba(143,42,35,.23)}
-button.secondary{color:var(--ink);background:#eadfca}
-button:disabled{opacity:.43;cursor:not-allowed}
-.status{min-height:2.8em;margin-top:12px;line-height:1.65;font-weight:650}
-.status.error{color:#8a1712}.status.success{color:var(--ok)}
-.note{margin-top:10px;padding:12px 13px;border-left:4px solid var(--gold);border-radius:0 12px 12px 0;background:rgba(192,145,61,.11);font-size:.9rem;line-height:1.7}
-.viewer{position:relative;min-height:250px;display:grid;place-items:center;overflow:hidden;border:1px dashed var(--line);border-radius:17px;background:#fff}
-canvas{display:block;width:100%;height:auto}
-.empty{text-align:center;padding:60px 20px;color:var(--muted);line-height:1.8}
-.readout{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}
-.readout div{padding:10px;border-radius:12px;background:#f5ecdc;text-align:center;font-size:.84rem;color:var(--muted)}
-.readout strong{display:block;color:var(--ink);font-size:1.12rem;margin-top:3px}
-.small{margin:10px 0 0;color:var(--muted);font-size:.84rem;line-height:1.7}
-@media(max-width:560px){.buttons{grid-template-columns:1fr}.readout{grid-template-columns:1fr 1fr 1fr}}
+*{box-sizing:border-box}body{margin:0;background:#f4ead9;color:#2d211b;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif}main{max-width:760px;margin:auto;padding:14px 12px 50px}header,.card{border-radius:22px}header{padding:22px;background:linear-gradient(135deg,#472719,#7b4a30);color:#fff8ed}h1{margin:0;font-family:"Yu Mincho",serif;letter-spacing:.08em}header p{margin:9px 0 0;line-height:1.7}.card{margin-top:14px;padding:16px;background:#fffdf8;border:1px solid #d8c8b5;box-shadow:0 12px 28px #5a392015}.ok{padding:11px 13px;border-radius:13px;background:#e5f3e9;color:#17633f;font-weight:800}.grid{display:grid;gap:13px;margin-top:14px}label{font-weight:800}input,select,button{font:inherit}input[type=file],select{width:100%;margin-top:7px;padding:12px;border:1px solid #ccbba8;border-radius:14px;background:#fff}input[type=range]{width:100%;margin-top:12px;accent-color:#a62e27}.buttons{display:grid;gap:10px;margin-top:15px}button{min-height:56px;border:0;border-radius:999px;padding:13px;font-weight:900;touch-action:manipulation}.test{background:#eadbc3;color:#2d211b}.play{background:#a62e27;color:#fff}.play:disabled{opacity:.42}.status{min-height:48px;margin-top:12px;line-height:1.65;font-weight:750}.player{margin-top:12px;padding:13px;border:2px solid #d9b8a2;border-radius:16px;background:#fff5ea}.player audio{display:block;width:100%;height:50px}.player a{display:block;margin-top:10px;padding:12px;border-radius:12px;background:#f0dfc8;color:#612b22;text-align:center;font-weight:900;text-decoration:none}.viewer{position:relative;min-height:230px;display:grid;place-items:center;overflow:hidden;border:1px dashed #c9b7a4;border-radius:17px;background:#fff}.viewer canvas{display:block;width:100%;height:auto}.empty{padding:55px 20px;color:#76695e;text-align:center;line-height:1.7}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.stats div{padding:10px 5px;border-radius:12px;background:#f3e8d7;text-align:center;font-size:.82rem;color:#74675f}.stats strong{display:block;color:#2d211b;font-size:1.05rem;margin-top:3px}.note{margin-top:12px;padding:12px;border-left:4px solid #be8d3e;background:#f7eddc;line-height:1.7;font-size:.9rem}.ver{text-align:right;color:#85776c;font-size:.75rem;margin-top:8px}@media(min-width:650px){.grid{grid-template-columns:1fr 1fr}.buttons{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 <main>
-<header>
-<h1>朱音オルゴール</h1>
-<p>御朱印の墨書を旋律、朱印を低音の響き、余白を休符に変換します。</p>
-</header>
+<header><h1>朱音オルゴール</h1><p>御朱印の墨書を旋律、朱印を低音、余白を休符に変換します。</p></header>
 <section class="card">
-<div id="runtime" class="runtime"><span class="lamp"></span><span id="runtimeText">JavaScriptを準備しています…</span></div>
-<noscript>この画面ではJavaScriptが停止しているため、写真の解析も音の再生もできません。HTMLのプレビューではなく、GitHub Pagesなどで公開したURLをSafariで開いてください。</noscript>
+<div class="ok" id="ready">アプリ準備OK — iPhone標準プレーヤー方式</div>
 <div class="grid">
-<label>御朱印の写真
-<input id="fileInput" type="file" accept="image/*" capture="environment">
-</label>
-<label>音階
-<select id="scaleSelect">
-<option value="in">陰旋法風（幽玄）</option>
-<option value="yo">陽旋法風（明るい）</option>
-<option value="ritsu">律音階風（端正）</option>
-</select>
-</label>
-<label>音色
-<select id="timbreSelect">
-<option value="wood">木箱（やわらかい）</option>
-<option value="glass">硝子（澄んだ音）</option>
-<option value="antique">古いぜんまい（素朴）</option>
-</select>
-</label>
-<label>読み取り数：<span id="stepsValue">24</span>
-<input id="stepsRange" type="range" min="8" max="40" step="8" value="24">
-</label>
-<label>テンポ：<span id="bpmValue">66</span> BPM
-<input id="bpmRange" type="range" min="42" max="100" value="66">
-</label>
-<label>反復回数
-<select id="repeatSelect">
-<option value="1" selected>1回</option>
-<option value="2">2回</option>
-<option value="3">3回</option>
-</select>
-</label>
+<label>御朱印の写真<input id="file" type="file" accept="image/*"></label>
+<label>音階<select id="scale"><option value="in">陰旋法風（幽玄）</option><option value="yo">陽旋法風（明るい）</option><option value="ritsu">律音階風（端正）</option></select></label>
+<label>読み取り数：<span id="stepsOut">24</span><input id="steps" type="range" min="8" max="40" step="8" value="24"></label>
+<label>テンポ：<span id="bpmOut">66</span> BPM<input id="bpm" type="range" min="42" max="100" value="66"></label>
 </div>
-<div class="buttons">
-<button id="testButton" class="secondary" type="button">① 音の動作テスト</button>
-<button id="playButton" class="primary" type="button" disabled>② 御朱印を奏でる</button>
-</div>
-<button id="stopButton" class="secondary" type="button" disabled style="margin-top:10px">停止</button>
-<div id="status" class="status" role="status" aria-live="polite">準備中です。</div>
-<div class="note">左から右へ画像を読みます。墨の縦位置が音程、墨の濃さが強さ、赤い朱印が低音の和音になります。</div>
-<p class="small">写真と解析結果は端末内だけで処理します。外部ライブラリやAPIは使いません。</p>
+<div class="buttons"><button class="test" id="test" type="button">① テスト音を作る</button><button class="play" id="play" type="button" disabled>② 御朱印の曲を作る</button></div>
+<div class="player"><strong>ここで再生してください</strong><audio id="audio" controls playsinline preload="metadata"></audio><a id="openAudio" href="#" hidden>音声ファイルを開く</a></div>
+<div id="status" class="status">まず「テスト音を作る」を押してください。</div>
+<div class="note">ボタンを押すとWAV音声を端末内で作ります。自動再生されない場合は、上のプレーヤーに出る「▶︎」か「音声ファイルを開く」を押してください。</div>
+<div class="ver">v4 / WAV生成方式</div>
 </section>
-<section class="card">
-<div class="viewer">
-<div id="emptyMessage" class="empty">写真を選ぶと、ここに御朱印と読み取り線が表示されます。</div>
-<canvas id="canvas" hidden></canvas>
-</div>
-<div class="readout">
-<div>旋律<strong id="noteCount">—</strong></div>
-<div>連打<strong id="repeatCount">—</strong></div>
-<div>朱印<strong id="sealCount">—</strong></div>
-</div>
-</section>
+<section class="card"><div class="viewer"><div id="empty" class="empty">写真を選ぶと、ここに御朱印が表示されます。</div><canvas id="canvas" hidden></canvas></div><div class="stats"><div>旋律<strong id="nNotes">—</strong></div><div>連打<strong id="nRepeat">—</strong></div><div>朱印<strong id="nSeal">—</strong></div></div></section>
 </main>
 <script>
-(() => {
+(function(){
 'use strict';
-const $ = id => document.getElementById(id);
-const runtime = $('runtime');
-const runtimeText = $('runtimeText');
-const statusEl = $('status');
-const fileInput = $('fileInput');
-const scaleSelect = $('scaleSelect');
-const timbreSelect = $('timbreSelect');
-const stepsRange = $('stepsRange');
-const bpmRange = $('bpmRange');
-const repeatSelect = $('repeatSelect');
-const playButton = $('playButton');
-const stopButton = $('stopButton');
-const testButton = $('testButton');
-const canvas = $('canvas');
-const emptyMessage = $('emptyMessage');
-const ctx = canvas.getContext('2d', {willReadFrequently:true});
-const scales = {
-in:{notes:[62,63,67,69,70,74,75,79,81,82,86],chord:[50,57,62]},
-yo:{notes:[62,64,67,69,71,74,76,79,81,83,86],chord:[50,57,59]},
-ritsu:{notes:[62,64,67,69,72,74,76,79,81,84,86],chord:[50,57,60]}
-};
-let pixels = null;
-let events = [];
-let audioContext = null;
-let master = null;
-let playbackId = 0;
-let animationId = 0;
-const activeNodes = new Set();
-const clamp=(n,min,max)=>Math.min(max,Math.max(min,n));
-const midiToHz=m=>440*Math.pow(2,(m-69)/12);
-function status(message,type=''){
-statusEl.textContent=message;
-statusEl.className='status'+(type?' '+type:'');
-}
-function updateLabels(){
-$('stepsValue').textContent=stepsRange.value;
-$('bpmValue').textContent=bpmRange.value;
-}
-async function ensureAudio(){
-const AC=window.AudioContext||window.webkitAudioContext;
-if(!AC) throw new Error('このブラウザーはWeb Audioに対応していません。');
-if(!audioContext){
-audioContext=new AC();
-master=audioContext.createGain();
-master.gain.value=.72;
-master.connect(audioContext.destination);
-}
-if(audioContext.state==='suspended') await audioContext.resume();
-return audioContext;
-}
-function track(node){
-activeNodes.add(node);
-node.addEventListener('ended',()=>activeNodes.delete(node),{once:true});
-}
-function tone(midi,when,velocity=.6,duration=1.25,low=false){
-const hz=midiToHz(midi);
-const timbre=timbreSelect.value;
-const mix=audioContext.createGain();
-const filter=audioContext.createBiquadFilter();
-filter.type=low?'lowpass':'highpass';
-filter.frequency.value=low?1600:240;
-mix.connect(filter);filter.connect(master);
-const partials=timbre==='glass'?[[1,1],[2.01,.35],[3.98,.16],[6.05,.07]]:timbre==='antique'?[[1,1],[2,.22],[3,.08]]:[[1,1],[2.02,.27],[4.01,.11]];
-const decay=timbre==='glass'?1.8:timbre==='antique'?1.05:1.4;
-mix.gain.setValueAtTime(.0001,when);
-mix.gain.exponentialRampToValueAtTime(Math.max(.0002,velocity*(low?.15:.105)),when+.01);
-mix.gain.exponentialRampToValueAtTime(.0001,when+Math.max(duration,decay));
-partials.forEach(([multiple,amp],i)=>{
-const osc=audioContext.createOscillator();
-const gain=audioContext.createGain();
-osc.type=(timbre==='antique'&&i===0)?'triangle':'sine';
-osc.frequency.value=hz*multiple;
-gain.gain.value=amp;
-osc.connect(gain);gain.connect(mix);
-track(osc);osc.start(when);osc.stop(when+Math.max(duration,decay)+.08);
-});
-}
-function clickSound(when,strength=.12){
-const osc=audioContext.createOscillator();
-const gain=audioContext.createGain();
-const filter=audioContext.createBiquadFilter();
-osc.type='square';
-osc.frequency.setValueAtTime(1050,when);
-osc.frequency.exponentialRampToValueAtTime(190,when+.026);
-gain.gain.setValueAtTime(strength*.035,when);
-gain.gain.exponentialRampToValueAtTime(.0001,when+.032);
-filter.type='bandpass';filter.frequency.value=1200;filter.Q.value=.8;
-osc.connect(gain);gain.connect(filter);filter.connect(master);
-track(osc);osc.start(when);osc.stop(when+.04);
-}
-async function loadImage(file){
-if(!file) throw new Error('写真が選ばれていません。');
-if(!file.type.startsWith('image/')) throw new Error('画像ファイルを選んでください。');
-const url=URL.createObjectURL(file);
-try{
-const img=new Image();
-img.decoding='async';
-await new Promise((resolve,reject)=>{
-img.onload=resolve;
-img.onerror=()=>reject(new Error('写真を開けません。JPEGまたはスクリーンショットで試してください。'));
-img.src=url;
-});
-return img;
-}finally{
-setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-}
-async function handleFile(){
-const file=fileInput.files&&fileInput.files[0];
-if(!file) return;
-stop(false);
-playButton.disabled=true;
-status('写真を読み込んでいます…');
-try{
-const img=await loadImage(file);
-const maxW=900,maxH=1200;
-const ratio=Math.min(maxW/img.naturalWidth,maxH/img.naturalHeight,1);
-canvas.width=Math.max(1,Math.round(img.naturalWidth*ratio));
-canvas.height=Math.max(1,Math.round(img.naturalHeight*ratio));
-ctx.clearRect(0,0,canvas.width,canvas.height);
-ctx.drawImage(img,0,0,canvas.width,canvas.height);
-pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
-canvas.hidden=false;emptyMessage.hidden=true;
-analyze();
-}catch(err){
-console.error(err);pixels=null;events=[];
-status(err.message||'写真を読み込めませんでした。','error');
-}
-}
-function analyze(){
-if(!pixels)return;
-stop(false);
-const {width,height,data}=pixels;
-const count=Number(stepsRange.value);
-const slice=width/count;
-const notes=scales[scaleSelect.value].notes;
-const stride=Math.max(1,Math.floor(Math.min(width,height)/320));
-const result=[];
-let notesFound=0,repeatsFound=0,sealsFound=0;
-for(let s=0;s<count;s++){
-const x0=Math.floor(s*slice),x1=Math.min(width,Math.ceil((s+1)*slice));
-let sampled=0,inkCount=0,redCount=0,weight=0,weightedY=0;
-for(let y=0;y<height;y+=stride){
-for(let x=x0;x<x1;x+=stride){
-const i=(y*width+x)*4;
-const r=data[i],g=data[i+1],b=data[i+2],a=data[i+3];
-if(a<20)continue;
-sampled++;
-const brightness=.299*r+.587*g+.114*b;
-const saturation=Math.max(r,g,b)-Math.min(r,g,b);
-const isRed=r>82&&r>g*1.15&&r>b*1.1&&saturation>25;
-const isInk=!isRed&&brightness<170&&saturation<115;
-if(isRed)redCount++;
-if(isInk){const d=clamp((205-brightness)/205,.04,1);inkCount++;weight+=d;weightedY+=y*d;}
-}
-}
-const inkDensity=sampled?inkCount/sampled:0;
-const redDensity=sampled?redCount/sampled:0;
-const hasInk=inkDensity>.004&&weight>0;
-const avgY=hasInk?weightedY/weight:height/2;
-const index=clamp(Math.round((1-avgY/height)*(notes.length-1)),0,notes.length-1);
-const repeat=hasInk&&inkDensity>.048;
-const seal=redDensity>.003;
-result.push({midi:hasInk?notes[index]:null,velocity:clamp(.33+inkDensity*4,.33,.9),repeat,seal,inkDensity,redDensity});
-if(hasInk)notesFound++;if(repeat)repeatsFound++;if(seal)sealsFound++;
-}
-events=result;
-$('noteCount').textContent=notesFound+'音';
-$('repeatCount').textContent=repeatsFound+'か所';
-$('sealCount').textContent=sealsFound+'か所';
-render(-1);
-playButton.disabled=false;
-stopButton.disabled=false;
-status('読み取り完了。まず「音の動作テスト」、続いて「御朱印を奏でる」を押してください。','success');
-}
-function render(active){
-if(!pixels)return;
-ctx.putImageData(pixels,0,0);
-const count=Number(stepsRange.value),slice=canvas.width/count;
-ctx.save();
-for(let i=1;i<count;i++){
-const x=Math.round(i*slice);
-ctx.strokeStyle='rgba(60,35,22,.09)';ctx.lineWidth=Math.max(1,canvas.width/700);
-ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();
-}
-if(active>=0){
-const x=active*slice;
-ctx.fillStyle='rgba(192,145,61,.18)';ctx.fillRect(x,0,slice,canvas.height);
-ctx.strokeStyle='rgba(167,50,42,.96)';ctx.lineWidth=Math.max(3,canvas.width/250);
-ctx.beginPath();ctx.moveTo(x+slice,0);ctx.lineTo(x+slice,canvas.height);ctx.stroke();
-}
-ctx.restore();
-}
-function stop(show=true){
-playbackId++;
-cancelAnimationFrame(animationId);
-activeNodes.forEach(node=>{try{node.stop();}catch(_){}});
-activeNodes.clear();
-if(pixels)render(-1);
-if(show)status('停止しました。');
-}
-async function testAudio(){
-try{
-await ensureAudio();
-const now=audioContext.currentTime+.04;
-tone(74,now,.75,1.2);tone(79,now+.2,.68,1.2);tone(83,now+.4,.62,1.4);
-status('テスト音を鳴らしました。聞こえたら音声機能は正常です。','success');
-}catch(err){console.error(err);status(err.message||'音声を開始できませんでした。','error');}
-}
-async function play(){
-if(!events.length){status('先に御朱印の写真を選んでください。','error');return;}
-try{
-await ensureAudio();
-stop(false);
-const id=++playbackId;
-const bpm=Number(bpmRange.value),loops=Number(repeatSelect.value);
-const stepSeconds=60/bpm/2;
-const start=audioContext.currentTime+.1;
-const scale=scales[scaleSelect.value];
-for(let loop=0;loop<loops;loop++){
-events.forEach((ev,index)=>{
-const when=start+(loop*events.length+index)*stepSeconds;
-clickSound(when,clamp(.08+ev.inkDensity*1.2,.08,.2));
-if(ev.midi!==null){tone(ev.midi,when,ev.velocity,1.3);if(ev.repeat)tone(ev.midi,when+stepSeconds*.35,ev.velocity*.58,.75);}
-if(ev.seal)scale.chord.forEach(m=>tone(m,when,clamp(.34+ev.redDensity*5,.34,.7),1.75,true));
-});
-}
-const total=events.length*loops;
-status('演奏中。赤い読み取り線が左から右へ進みます。','success');
-const animate=()=>{
-if(id!==playbackId)return;
-const elapsed=audioContext.currentTime-start;
-if(elapsed<0){animationId=requestAnimationFrame(animate);return;}
-const step=Math.floor(elapsed/stepSeconds);
-if(step>=total){render(-1);status('演奏が終わりました。','success');return;}
-render(step%events.length);animationId=requestAnimationFrame(animate);
-};
-animationId=requestAnimationFrame(animate);
-}catch(err){console.error(err);status(err.message||'演奏を開始できませんでした。','error');}
-}
-window.addEventListener('error',e=>status('エラー：'+(e.message||'不明なエラー'),'error'));
-fileInput.addEventListener('change',handleFile);
-fileInput.addEventListener('input',handleFile);
-testButton.addEventListener('click',testAudio);
-playButton.addEventListener('click',play);
-stopButton.addEventListener('click',()=>stop(true));
-stepsRange.addEventListener('input',()=>{updateLabels();if(pixels)analyze();});
-bpmRange.addEventListener('input',updateLabels);
-scaleSelect.addEventListener('change',()=>{if(pixels)analyze();});
-updateLabels();
-runtime.classList.add('ok');
-runtimeText.textContent='アプリ準備OK — Safariで動作中';
-status('準備OK。まず「音の動作テスト」を押してください。','success');
+var q=function(id){return document.getElementById(id)},file=q('file'),scale=q('scale'),steps=q('steps'),bpm=q('bpm'),play=q('play'),test=q('test'),audio=q('audio'),openAudio=q('openAudio'),status=q('status'),canvas=q('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true}),empty=q('empty');
+var source=null,events=[],audioUrl='';
+var scales={in:{n:[62,63,67,69,70,74,75,79,81,82,86],c:[50,57,62]},yo:{n:[62,64,67,69,71,74,76,79,81,83,86],c:[50,57,59]},ritsu:{n:[62,64,67,69,72,74,76,79,81,84,86],c:[50,57,60]}};
+function setStatus(s){status.textContent=s}
+function clamp(x,a,b){return Math.min(b,Math.max(a,x))}
+function hz(m){return 440*Math.pow(2,(m-69)/12)}
+function ascii(v,o,s){for(var i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))}
+function wav(samples,sr){var b=new ArrayBuffer(44+samples.length*2),v=new DataView(b);ascii(v,0,'RIFF');v.setUint32(4,36+samples.length*2,true);ascii(v,8,'WAVE');ascii(v,12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);ascii(v,36,'data');v.setUint32(40,samples.length*2,true);for(var i=0;i<samples.length;i++){var s=clamp(samples[i],-1,1);v.setInt16(44+i*2,s<0?s*32768:s*32767,true)}return new Blob([b],{type:'audio/wav'})}
+function note(buf,sr,start,midi,vol,dur,low){var a=Math.floor(start*sr),z=Math.min(buf.length,a+Math.floor(dur*sr)),f=hz(midi);for(var i=a;i<z;i++){var t=(i-a)/sr,e=Math.min(1,t/.008)*Math.exp(-t/(low?.75:.55));buf[i]+=Math.sin(2*Math.PI*f*t)*e*vol*(low?.20:.26);buf[i]+=Math.sin(2*Math.PI*f*2.01*t)*e*vol*(low?.04:.07)}}
+function normalize(buf){var p=.0001;for(var i=0;i<buf.length;i++)p=Math.max(p,Math.abs(buf[i]));var g=Math.min(1.5,.88/p);for(var j=0;j<buf.length;j++)buf[j]=Math.tanh(buf[j]*g)}
+function useBlob(blob,name){if(audioUrl)URL.revokeObjectURL(audioUrl);audioUrl=URL.createObjectURL(blob);audio.pause();audio.src=audioUrl;audio.load();openAudio.href=audioUrl;openAudio.download=name;openAudio.hidden=false;audio.play().then(function(){setStatus('再生中です。')}).catch(function(){setStatus('音声を作りました。プレーヤーの「▶︎」を押してください。')})}
+function makeTest(){var sr=22050,b=new Float32Array(sr*3);note(b,sr,.05,72,.9,1.4,false);note(b,sr,.48,76,.82,1.4,false);note(b,sr,.91,79,.82,1.6,false);normalize(b);useBlob(wav(b,sr),'test.wav')}
+function analyze(){if(!source)return;var w=source.width,h=source.height,d=source.data,count=Number(steps.value),slice=w/count,sc=scales[scale.value].n,stride=Math.max(1,Math.floor(Math.min(w,h)/300)),out=[],nn=0,nr=0,ns=0;for(var s=0;s<count;s++){var x0=Math.floor(s*slice),x1=Math.min(w,Math.ceil((s+1)*slice)),all=0,ink=0,red=0,wy=0,weight=0;for(var y=0;y<h;y+=stride){for(var x=x0;x<x1;x+=stride){var i=(y*w+x)*4,r=d[i],g=d[i+1],b=d[i+2],br=.299*r+.587*g+.114*b,sat=Math.max(r,g,b)-Math.min(r,g,b),isRed=r>80&&r>g*1.16&&r>b*1.1&&sat>24,isInk=!isRed&&br<172&&sat<120;all++;if(isRed)red++;if(isInk){var deep=clamp((210-br)/210,.05,1);ink++;weight+=deep;wy+=y*deep}}}var id=ink/all,rd=red/all,has=id>.004&&weight>0,av=has?wy/weight:h/2,idx=clamp(Math.round((1-av/h)*(sc.length-1)),0,sc.length-1),rep=has&&id>.05,sealHit=rd>.003;out.push({m:has?sc[idx]:null,v:clamp(.35+id*4,.35,.9),rep:rep,seal:sealHit});if(has)nn++;if(rep)nr++;if(sealHit)ns++}events=out;q('nNotes').textContent=nn+'音';q('nRepeat').textContent=nr+'か所';q('nSeal').textContent=ns+'か所';play.disabled=false;setStatus('読み取り完了。「御朱印の曲を作る」を押してください。')}
+function makeSong(){if(!events.length){setStatus('先に写真を選んでください。');return}setStatus('曲を生成しています…');setTimeout(function(){var sr=22050,stepSec=60/Number(bpm.value)/2,dur=events.length*stepSec+2.2,b=new Float32Array(Math.ceil(dur*sr)),ch=scales[scale.value].c;events.forEach(function(e,i){var t=i*stepSec+.05;if(e.m!==null){note(b,sr,t,e.m,e.v,1.5,false);if(e.rep)note(b,sr,t+stepSec*.35,e.m,e.v*.55,.8,false)}if(e.seal)ch.forEach(function(m){note(b,sr,t,m,.48,1.8,true)})});normalize(b);useBlob(wav(b,sr),'goshuin-musicbox.wav')},30)}
+file.addEventListener('change',function(){var f=file.files&&file.files[0];if(!f)return;setStatus('写真を読み込んでいます…');var u=URL.createObjectURL(f),img=new Image();img.onload=function(){var ratio=Math.min(900/img.naturalWidth,1200/img.naturalHeight,1);canvas.width=Math.max(1,Math.round(img.naturalWidth*ratio));canvas.height=Math.max(1,Math.round(img.naturalHeight*ratio));ctx.drawImage(img,0,0,canvas.width,canvas.height);source=ctx.getImageData(0,0,canvas.width,canvas.height);canvas.hidden=false;empty.hidden=true;URL.revokeObjectURL(u);analyze()};img.onerror=function(){URL.revokeObjectURL(u);setStatus('写真を開けませんでした。別のJPEGで試してください。')};img.src=u});
+steps.addEventListener('input',function(){q('stepsOut').textContent=steps.value;if(source)analyze()});bpm.addEventListener('input',function(){q('bpmOut').textContent=bpm.value});scale.addEventListener('change',function(){if(source)analyze()});test.addEventListener('click',makeTest);play.addEventListener('click',makeSong);window.addEventListener('error',function(e){setStatus('エラー：'+e.message)});
 })();
 </script>
 </body>
