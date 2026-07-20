@@ -1,0 +1,55 @@
+        var e=events[i],t=intro+i*stepSec+(random01()-.5)*stepSec*.035;
+        if(e.has){var idx=clamp(e.degree,0,key.notes.length-1),midi=key.notes[idx];if(previous!==null&&Math.abs(midi-previous)>10){while(midi-previous>9)midi-=12;while(previous-midi>9)midi+=12}previous=midi;addMusicBox(left,right,sr,t,midi,e.volume,(e.x-.5)*.55,seed+i*31,3.4);if(e.repeat)addMusicBox(left,right,sr,t+stepSec*.42,midi+((i%3===0)?2:0),e.volume*.48,(e.x-.5)*.48,seed+i*31+3,2.4)}
+        if(e.color){var colorMidi=key.base+key.intervals[e.colorDegree%7]+12;while(colorMidi>91)colorMidi-=12;var colorPan=clamp((e.hue/360-.5)*1.3,-.72,.72),colorVol=.16+e.colorStrength*.26;addMusicBox(left,right,sr,t+stepSec*.18,colorMidi,colorVol,colorPan,seed+2200+i*17,2.5);if(e.colorRatio>.024)addMusicBox(left,right,sr,t+stepSec*.55,colorMidi+((e.colorDegree%2)?3:4),colorVol*.52,-colorPan*.55,seed+2300+i*19,1.9)}
+        if(e.seal){var degreeRoot=(sealIndex%2===0)?0:4,root=48+key.pc+key.intervals[degreeRoot%7];while(root>58)root-=12;var triad=key.minor?[0,3,7]:[0,4,7];for(var c=0;c<triad.length;c++)addMusicBox(left,right,sr,t,root+triad[c],.35,-.12+c*.12,seed+900+i*11+c,3.8);sealIndex++}
+      }
+      var cadence=intro+events.length*stepSec+.15,finalRoot=60+key.pc;while(finalRoot<64)finalRoot+=12;while(finalRoot>72)finalRoot-=12;addMusicBox(left,right,sr,cadence,finalRoot,.88,0,seed+4000,3.8);addMusicBox(left,right,sr,cadence,finalRoot+7,.48,.13,seed+4001,3.3);addMechanismBed(left,right,sr,intro,cadence+1.2,stepSec,mech,seed+88);normalize(left,right);
+      $('keyName').textContent=key.jp+' / '+key.name;analysisLabel.textContent=key.name.toUpperCase()+' / '+events.length+' STEPS';useBlob(wavStereo(left,right,sr),'goshuin-musicbox-'+key.name.replace(' ','-')+'.wav',{intro:intro,length:events.length*stepSec+1.3});
+    }catch(err){setStatus('生成エラー：'+safeError(err))}
+    busy=false;generate.disabled=false;previewCard.classList.remove('playing');
+  },30);
+}
+
+function readHeader(selected){return selected.slice(0,65536).arrayBuffer()}
+function detectFormat(bytes){
+  var u=new Uint8Array(bytes);
+  if(u.length>=3&&u[0]===0xff&&u[1]===0xd8&&u[2]===0xff)return'jpeg';
+  if(u.length>=8&&u[0]===0x89&&u[1]===0x50&&u[2]===0x4e&&u[3]===0x47&&u[4]===0x0d&&u[5]===0x0a&&u[6]===0x1a&&u[7]===0x0a)return'png';
+  if(u.length>=12&&String.fromCharCode(u[0],u[1],u[2],u[3])==='RIFF'&&String.fromCharCode(u[8],u[9],u[10],u[11])==='WEBP')return'webp';
+  return'';
+}
+function parseDimensions(bytes,format){
+  var u=new Uint8Array(bytes),v=new DataView(bytes);
+  try{
+    if(format==='png'&&u.length>=24)return{w:v.getUint32(16,false),h:v.getUint32(20,false)};
+    if(format==='jpeg'){
+      var i=2;while(i+9<u.length){if(u[i]!==0xff){i++;continue}var marker=u[i+1];i+=2;if(marker===0xd8||marker===0xd9)continue;if(i+2>u.length)break;var len=(u[i]<<8)+u[i+1];if(len<2||i+len>u.length)break;if((marker>=0xc0&&marker<=0xc3)||(marker>=0xc5&&marker<=0xc7)||(marker>=0xc9&&marker<=0xcb)||(marker>=0xcd&&marker<=0xcf))return{h:(u[i+3]<<8)+u[i+4],w:(u[i+5]<<8)+u[i+6]};i+=len}
+    }
+    if(format==='webp'&&u.length>=30){var chunk=String.fromCharCode(u[12],u[13],u[14],u[15]);if(chunk==='VP8X')return{w:1+u[24]+(u[25]<<8)+(u[26]<<16),h:1+u[27]+(u[28]<<8)+(u[29]<<16)};if(chunk==='VP8 '&&u.length>=30)return{w:v.getUint16(26,true)&0x3fff,h:v.getUint16(28,true)&0x3fff};if(chunk==='VP8L'&&u.length>=25){var b1=u[21],b2=u[22],b3=u[23],b4=u[24];return{w:1+(b1|((b2&0x3f)<<8)),h:1+(((b2&0xc0)>>6)|(b3<<2)|((b4&0x0f)<<10))}}
+    }
+  }catch(ignore){}
+  return null;
+}
+function validateFile(selected,bytes){
+  if(!selected)throw new Error('画像ファイルが選ばれていません。');
+  if(selected.size<=0)throw new Error('空のファイルは使用できません。');
+  if(selected.size>MAX_FILE_BYTES)throw new Error('画像は20MB以下にしてください。');
+  var format=detectFormat(bytes);if(!format)throw new Error('JPEG・PNG・WebP以外のファイルは安全のため受け付けません。');
+  var declared=(selected.type||'').toLowerCase();if(declared&&['image/jpeg','image/png','image/webp'].indexOf(declared)===-1)throw new Error('ファイル形式の申告が一致しません。JPEG・PNG・WebPを選んでください。');
+  var d=parseDimensions(bytes,format);if(d&&(d.w<=0||d.h<=0||d.w>MAX_SOURCE_SIDE||d.h>MAX_SOURCE_SIDE||d.w*d.h>MAX_SOURCE_PIXELS))throw new Error('画像の実寸が大きすぎます。6000万画素以下の画像を使用してください。');
+  return{format:format,dimensions:d};
+}
+function decodeWithImage(selected){
+  return new Promise(function(resolve,reject){var url=URL.createObjectURL(selected),img=new Image();img.onload=function(){URL.revokeObjectURL(url);resolve(img)};img.onerror=function(){URL.revokeObjectURL(url);reject(new Error('画像を安全に展開できませんでした。'))};img.decoding='async';img.src=url});
+}
+async function loadImage(selected){
+  if(!selected||busy)return;busy=true;generate.disabled=true;fileName.textContent=(selected.name||'選択した画像').slice(0,120);setStatus('画像形式と大きさを確認しています…');
+  try{
+    var header=await readHeader(selected),checked=validateFile(selected,header),bitmap=null,drawable=null;
+    if('createImageBitmap'in window){try{bitmap=await createImageBitmap(selected,{imageOrientation:'from-image'});drawable=bitmap}catch(ignore){drawable=await decodeWithImage(selected)}}else drawable=await decodeWithImage(selected);
+    var iw=drawable.width||drawable.naturalWidth,ih=drawable.height||drawable.naturalHeight;
+    if(!iw||!ih||iw>MAX_SOURCE_SIDE||ih>MAX_SOURCE_SIDE||iw*ih>MAX_SOURCE_PIXELS)throw new Error('画像の実寸が大きすぎます。6000万画素以下の画像を使用してください。');
+    var scale=Math.min(MAX_CANVAS_W/iw,MAX_CANVAS_H/ih,Math.sqrt(MAX_CANVAS_PIXELS/(iw*ih)),1),cw=Math.max(1,Math.round(iw*scale)),ch=Math.max(1,Math.round(ih*scale));
+    canvas.width=cw;canvas.height=ch;maskCanvas.width=cw;maskCanvas.height=ch;ctx.fillStyle='#fff';ctx.fillRect(0,0,cw,ch);ctx.drawImage(drawable,0,0,cw,ch);if(bitmap&&bitmap.close)bitmap.close();
+    source=ctx.getImageData(0,0,cw,ch);canvas.hidden=false;empty.hidden=true;events=[];clusters=[];updatePalette([]);maskCanvas.hidden=true;analysisLabel.textContent=checked.format.toUpperCase()+' / '+iw+'×'+ih;setStatus('画像を安全な大きさへ縮小しました。彩色を解析しています…');
+    busy=false;analyze();
