@@ -1,0 +1,121 @@
+(function(){
+'use strict';
+
+if(window.top!==window.self){
+  document.addEventListener('DOMContentLoaded',function(){
+    document.body.className='frame-blocked';
+    document.body.textContent='安全のため、御朱印オルゴールは他サイト内の埋め込み表示では動作しません。新しいタブで開いてください。';
+  });
+  return;
+}
+
+function $(id){return document.getElementById(id)}
+var file=$('file'),fileName=$('fileName'),steps=$('steps'),bpm=$('bpm'),mechanism=$('mechanism');
+var colorSensitivity=$('colorSensitivity'),paperCorrection=$('paperCorrection'),showMask=$('showMask');
+var generate=$('generate'),test=$('test'),listen=$('listen'),audio=$('audio'),download=$('download');
+var status=$('status'),canvas=$('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
+var maskCanvas=$('maskCanvas'),maskCtx=maskCanvas.getContext('2d',{willReadFrequently:true});
+var empty=$('empty'),scan=$('scan'),previewCard=$('previewCard'),analysisLabel=$('analysisLabel');
+var palette=$('palette'),paletteWrap=$('paletteWrap'),dropZone=$('dropZone');
+var paperSwatch=$('paperSwatch'),paperLabel=$('paperLabel');
+
+var source=null,events=[],clusters=[],paper={r:238,g:234,b:222},audioUrl='',songMeta=null,lastKey=-1,scanFrame=0,analyzeTimer=0,busy=false;
+var ROOT_NAMES=['C','D♭','D','E♭','E','F','F♯','G','A♭','A','B♭','B'];
+var MAJOR=[0,2,4,5,7,9,11],MINOR=[0,2,3,5,7,8,10];
+var MAX_FILE_BYTES=20*1024*1024,MAX_SOURCE_PIXELS=60000000,MAX_SOURCE_SIDE=20000,MAX_CANVAS_PIXELS=2400000,MAX_CANVAS_W=1600,MAX_CANVAS_H=1800;
+
+function setStatus(text){status.textContent=text}
+function clamp(x,a,b){return Math.min(b,Math.max(a,x))}
+function median(values){values.sort(function(a,b){return a-b});var n=values.length;return n?values[Math.floor(n/2)]:0}
+function hz(midi){return 440*Math.pow(2,(midi-69)/12)}
+function hueDistance(a,b){var d=Math.abs(a-b)%360;return Math.min(d,360-d)}
+function rgbToHsv(r,g,b){
+  r/=255;g/=255;b/=255;var max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min,h=0;
+  if(d!==0){if(max===r)h=60*(((g-b)/d)%6);else if(max===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4)}
+  if(h<0)h+=360;return{h:h,s:max===0?0:d/max,v:max};
+}
+function rgbToLab(r,g,b){
+  function lin(v){v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4)}
+  var R=lin(r),G=lin(g),B=lin(b);
+  var x=(R*.4124564+G*.3575761+B*.1804375)/.95047;
+  var y=(R*.2126729+G*.7151522+B*.0721750);
+  var z=(R*.0193339+G*.1191920+B*.9503041)/1.08883;
+  function f(t){return t>.008856?Math.cbrt(t):7.787*t+16/116}
+  var fx=f(x),fy=f(y),fz=f(z);return{l:116*fy-16,a:500*(fx-fy),b:200*(fy-fz)};
+}
+function deltaE(a,b){var dl=a.l-b.l,da=a.a-b.a,db=a.b-b.b;return Math.sqrt(dl*dl+da*da+db*db)}
+function correctedRGB(r,g,b){
+  if(!paperCorrection.checked)return{r:r,g:g,b:b};
+  var gray=(paper.r+paper.g+paper.b)/3;
+  var sr=Math.pow(gray/Math.max(24,paper.r),.78),sg=Math.pow(gray/Math.max(24,paper.g),.78),sb=Math.pow(gray/Math.max(24,paper.b),.78);
+  return{r:clamp(r*sr,0,255),g:clamp(g*sg,0,255),b:clamp(b*sb,0,255)};
+}
+function thresholds(){
+  var s=Number(colorSensitivity.value)/100;
+  return{de:25-13*s,chroma:25-14*s,sat:.29-.15*s,paper:9.5+(1-s)*2.5};
+}
+function classifyPixel(r,g,b,paperLab,t){
+  var c=correctedRGB(r,g,b),lab=rgbToLab(c.r,c.g,c.b),hsv=rgbToHsv(c.r,c.g,c.b);
+  var de=deltaE(lab,paperLab),chroma=Math.sqrt(lab.a*lab.a+lab.b*lab.b),dark=paperLab.l-lab.l;
+  var paperLike=(de<t.paper&&lab.l>paperLab.l-22)||(lab.l>94&&chroma<8);
+  var ink=!paperLike&&(lab.l<32||(dark>26&&chroma<16)||(dark>36&&chroma<25&&hsv.s<.43));
+  var red=!paperLike&&!ink&&de>t.de&&chroma>22&&hsv.s>t.sat&&lab.l<89&&(hsv.h<25||hsv.h>337);
+  var color=!paperLike&&!ink&&!red&&de>t.de&&chroma>t.chroma&&hsv.s>t.sat&&lab.l>14&&lab.l<95;
+  return{paper:paperLike,ink:ink,red:red,color:color,lab:lab,hsv:hsv,r:c.r,g:c.g,b:c.b,de:de,chroma:chroma};
+}
+function sensitivityLabel(){var v=Number(colorSensitivity.value);return v<35?'控えめ':v>65?'淡色まで':'標準'}
+function colorName(rgb){
+  var hsv=rgbToHsv(rgb.r,rgb.g,rgb.b),h=hsv.h,v=hsv.v,s=hsv.s;
+  if(s<.16)return v>.78?'白・灰':'灰';
+  if(v<.38)return h<35||h>340?'濃茶・赤':'濃色';
+  if(h<15||h>=345)return v>.78?'桃':'赤';
+  if(h<38)return v<.62?'茶・橙':'橙';
+  if(h<67)return s<.55?'金・黄':'黄';
+  if(h<95)return '黄緑';
+  if(h<155)return '緑';
+  if(h<185)return '青緑';
+  if(h<210)return v>.72?'水色':'青緑';
+  if(h<255)return '青';
+  if(h<290)return '紫';
+  if(h<330)return '桃・紫';
+  return '赤紫';
+}
+
+function estimatePaper(image){
+  var w=image.width,h=image.height,data=image.data,grid=Math.max(2,Math.floor(Math.sqrt(w*h/9000))),candidates=[];
+  var bandX=Math.max(2,Math.floor(w*.09)),bandY=Math.max(2,Math.floor(h*.09));
+  for(var y=0;y<h;y+=grid){
+    for(var x=0;x<w;x+=grid){
+      var border=x<bandX||x>w-bandX||y<bandY||y>h-bandY;
+      if(!border&&((x/grid+y/grid)%4!==0))continue;
+      var k=(y*w+x)*4,r=data[k],g=data[k+1],b=data[k+2],hsv=rgbToHsv(r,g,b),luma=(.299*r+.587*g+.114*b)/255;
+      var score=luma-.58*hsv.s+(border ? .11 : 0);
+      if(luma>.38)candidates.push({r:r,g:g,b:b,score:score});
+    }
+  }
+  if(!candidates.length)return{r:238,g:234,b:222};
+  candidates.sort(function(a,b){return b.score-a.score});
+  var take=Math.max(20,Math.floor(candidates.length*.18)),rs=[],gs=[],bs=[];
+  for(var i=0;i<take;i++){rs.push(candidates[i].r);gs.push(candidates[i].g);bs.push(candidates[i].b)}
+  return{r:median(rs),g:median(gs),b:median(bs)};
+}
+function paperDescription(p){
+  var hsv=rgbToHsv(p.r,p.g,p.b),light=(p.r+p.g+p.b)/3;
+  if(light>242&&hsv.s<.08)return '白い用紙';
+  if(hsv.h>35&&hsv.h<72&&hsv.s>.08)return light>220?'生成り・和紙色':'黄みのある用紙';
+  if(hsv.h<35&&hsv.s>.08)return '暖色の用紙・照明';
+  if(hsv.h>180&&hsv.h<260&&hsv.s>.07)return '寒色の照明';
+  return '淡い用紙色';
+}
+
+function clusterColors(points){
+  if(points.length<8)return[];
+  var maxPoints=6000;if(points.length>maxPoints){var reduced=[],jump=points.length/maxPoints;for(var z=0;z<maxPoints;z++)reduced.push(points[Math.floor(z*jump)]);points=reduced}
+  points.sort(function(a,b){return b.w-a.w});
+  var maxK=Math.min(6,Math.max(1,Math.floor(Math.sqrt(points.length/55))+1)),centers=[copyPoint(points[0])];
+  while(centers.length<maxK){
+    var best=null,bestScore=0;
+    for(var i=0;i<points.length;i++){
+      var d=minColorDistance(points[i],centers),score=d*points[i].w;
+      if(score>bestScore){bestScore=score;best=points[i]}
+    }
